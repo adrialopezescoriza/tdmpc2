@@ -3,6 +3,7 @@ import numpy as np
 from envs.wrappers.time_limit import TimeLimit
 
 import mani_skill2.envs
+import envs.tasks.envs_with_stage_indicators
 
 
 MANISKILL_TASKS = {
@@ -25,6 +26,17 @@ MANISKILL_TASKS = {
 	'turn-faucet': dict(
 		env='TurnFaucet-v0',
 		control_mode='pd_ee_delta_pose',
+	),
+	## Semi-sparse reward tasks with stage-indicators
+	'pick-place-semi': dict (
+		env='PickAndPlace_DrS_learn-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'turn-faucet-semi': dict (
+		env='TurnFaucet_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
 	),
 }
 
@@ -72,6 +84,7 @@ def make_env(cfg):
 		obs_mode='state',
 		control_mode=task_cfg['control_mode'],
 		render_camera_cfgs=dict(width=384, height=384),
+		reward_mode=task_cfg.get("reward_mode", None),
 	)
 	env = ManiSkillWrapper(env, cfg)
 	env = TimeLimit(env, max_episode_steps=100)
