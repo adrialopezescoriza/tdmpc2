@@ -37,6 +37,7 @@ class DrS_BaseEnv(BaseEnv):
 ############################################
 
 from mani_skill2.envs.pick_and_place.pick_single import PickSingleYCBEnv, PickSingleEGADEnv
+from mani_skill2.envs.pick_and_place.pick_cube import PickCubeEnv
 
 @register_env("PickAndPlace_DrS_learn-v0", max_episode_steps=100)
 class PickAndPlace_DrS_learn(PickSingleYCBEnv, DrS_BaseEnv):
@@ -51,7 +52,7 @@ class PickAndPlace_DrS_learn(PickSingleYCBEnv, DrS_BaseEnv):
         }
 
 @register_env("PickAndPlace_DrS_reuse-v0", max_episode_steps=100)
-class PickAndPlace_DrS_reuse(PickSingleEGADEnv, PickAndPlace_DrS_learn):
+class PickAndPlace_DrS_reuse(PickCubeEnv, PickAndPlace_DrS_learn):
     pass
 
 
