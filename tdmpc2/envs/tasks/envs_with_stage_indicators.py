@@ -4,7 +4,7 @@ import numpy as np
 from collections import OrderedDict
 
 class DrS_BaseEnv(BaseEnv):
-    SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse")
+    SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse", "drS")
 
     def compute_stage_indicator(self):
         raise NotImplementedError()
@@ -20,13 +20,13 @@ class DrS_BaseEnv(BaseEnv):
             return float(eval_info["success"])
         elif self._reward_mode == "dense":
             return self.compute_dense_reward(**kwargs)
-        elif self._reward_mode == "semi_sparse":
+        elif self._reward_mode == "semi_sparse" or self._reward_mode == "drS":
             # reward build from stage indicators
             return self.compute_semi_sparse_reward(**kwargs)
         else:
             raise NotImplementedError(self._reward_mode)
         
-    def compute_semi_sparse_reward(self, info, **kwargs):
+    def compute_semi_sparse_reward(self, **kwargs):
         stage_indicators = self.compute_stage_indicator()
         eval_info = self.evaluate(**kwargs)
         return sum(stage_indicators.values()) + float(eval_info["success"])
@@ -41,6 +41,10 @@ from mani_skill2.envs.pick_and_place.pick_cube import PickCubeEnv
 
 @register_env("PickAndPlace_DrS_learn-v0", max_episode_steps=100)
 class PickAndPlace_DrS_learn(PickSingleYCBEnv, DrS_BaseEnv):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 3
+        super().__init__(*args, **kwargs)
+
     def check_obj_placed(self):
         obj_to_goal_pos = self.goal_pos - self.obj_pose.p
         return np.linalg.norm(obj_to_goal_pos) <= self.goal_thresh
@@ -109,6 +113,7 @@ class TurnFaucetEnv_DrS_learn(TurnFaucetEnv_DrS):
         **kwargs,
     ):
         model_ids = ('5028','5063','5034','5000','5006','5039','5056','5020','5027','5041')
+        self.n_stages = 2
         super().__init__(*args, model_ids=model_ids, **kwargs)
 
 @register_env("TurnFaucet_DrS_reuse-v0", max_episode_steps=100)
@@ -119,6 +124,7 @@ class TurnFaucetEnv_DrS_reuse(TurnFaucetEnv_DrS):
         model_ids = (),
         **kwargs,
     ):
+        self.n_stages = 2
         model_json = f"{PACKAGE_ASSET_DIR}/partnet_mobility/meta/info_faucet_train.json"
         model_db = load_json(model_json)
         exclude_model_ids = ('5028','5063','5034','5000','5006','5039','5056','5020','5027','5041')
