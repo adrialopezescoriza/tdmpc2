@@ -46,7 +46,7 @@ class TDMPC2:
 			float: Discount factor for the task.
 		"""
 		if self.cfg.discount_hardcoded != 0:
-			return self.cfg.discount_hard_coded
+			return self.cfg.discount_hardcoded
 		frac = episode_length/self.cfg.discount_denom
 		return min(max((frac-1)/(frac), self.cfg.discount_min), self.cfg.discount_max)
 
