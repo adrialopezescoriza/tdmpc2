@@ -44,6 +44,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
+	'stack-cube-semi': dict (
+		env='StackCube_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
 	'pick-place-drS': dict (
 		env='PickAndPlace_DrS_reuse-v0',
 		control_mode='pd_ee_delta_pose',
@@ -51,6 +56,11 @@ MANISKILL_TASKS = {
 	),
 	'turn-faucet-drS': dict (
 		env='TurnFaucet_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='drS', 
+	),
+	'stack-cube-drS': dict (
+		env='StackCube_DrS_reuse-v0',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
 	),
