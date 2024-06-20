@@ -49,6 +49,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
+	'peg-insertion-semi': dict (
+		env='PegInsertionSide_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
 	'pick-place-drS': dict (
 		env='PickAndPlace_DrS_reuse-v0',
 		control_mode='pd_ee_delta_pose',
