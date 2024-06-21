@@ -33,6 +33,16 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'stack-cube': dict(
+		env='StackCube_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
+	'peg-insertion': dict(
+		env='PegInsertionSide_DrS_reuse-v0',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
 		env='PickAndPlace_DrS_reuse-v0',

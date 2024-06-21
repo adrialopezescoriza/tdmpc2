@@ -82,13 +82,13 @@ class StackCube_DrS_learn(StackCubeEnv, DrS_BaseEnv):
             np.linalg.norm(offset[:2]) <= np.linalg.norm(self.box_half_size[:2]) + 0.05
         )
 
-        z_flag = np.abs(offset[2] - self.box_half_size[2] * 2) <= 0.5
+        z_flag = np.abs(offset[2] - self.box_half_size[2] * 2) <= 0.05
         return bool(xy_flag and z_flag)
 
     def compute_stage_indicator(self):
         return {
             'is_grasped': float(self.agent.check_grasp(self.cubeA)),
-            'is_cube_A_placed': float(self.check_cube_A_placed()),
+            'is_cube_A_placed': float(self._check_cubeA_on_cubeB()),
         }
 
 @register_env("StackCube_DrS_reuse-v0", max_episode_steps=100)
