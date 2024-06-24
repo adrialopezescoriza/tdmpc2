@@ -47,7 +47,8 @@ class Discriminator(nn.Module):
             k = 3
             reward = k * stage_idx + stage_rewards[torch.arange(bs), stage_idx.long()]
             reward = reward / (k * self.n_stages) # reward is in (0, 1]
-            reward = reward - 2 # make the reward negative
+            #reward = reward - 2 # make the reward negative
+            reward = reward + 1 # make the reward positive
 
             return reward
         
@@ -80,7 +81,7 @@ class DrsRewardWrapper(gym.Wrapper):
         return obs
 
     def step(self, action):
-        next_obs, _, success, info = self.env.step(action)
-        reward = self.disc.get_reward(self._obs_to_tensor(next_obs).unsqueeze(0), success)
+        next_obs, _, done, info = self.env.step(action)
+        reward = self.disc.get_reward(self._obs_to_tensor(next_obs).unsqueeze(0), info['success'])
         reward = reward.item()
-        return next_obs, reward, success, info
+        return next_obs, reward, done, info
