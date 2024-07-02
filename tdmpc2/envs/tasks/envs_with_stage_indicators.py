@@ -107,25 +107,18 @@ class PegInsertionSide_DrS_learn(PegInsertionSideEnv, DrS_BaseEnv):
         self.n_stages = 3
         super().__init__(*args, **kwargs)
 
-    def is_peg_aligned(self):
-        # Only head position is used in fact
-        peg_head_pose = self.peg.pose.transform(self.peg_head_offset)
-        box_hole_pose = self.box_hole_pose
-        peg_head_pos_at_hole = (box_hole_pose.inv() * peg_head_pose).p
-        # x-axis is hole direction
-        x_flag = -0.015 <= peg_head_pos_at_hole[0]
-        y_flag = (
-            -self.box_hole_radius <= peg_head_pos_at_hole[1] <= self.box_hole_radius
-        )
-        z_flag = (
-            -self.box_hole_radius <= peg_head_pos_at_hole[2] <= self.box_hole_radius
-        )
-        return (y_flag and z_flag)
+    def is_peg_pre_inserted(self):
+        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
+        peg_head_wrt_goal_yz_dist = np.linalg.norm(peg_head_wrt_goal.p[1:])
+        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
+        peg_wrt_goal_yz_dist = np.linalg.norm(peg_wrt_goal.p[1:])
+
+        return peg_head_wrt_goal_yz_dist < 0.01 and peg_wrt_goal_yz_dist < 0.01
 
     def compute_stage_indicator(self):
         return {
-            'is_grasped': float(self.agent.check_grasp(self.peg)),
-            'is_peg_aligned': float(self.is_peg_aligned()),
+            'is_correctly_grasped': float(self.agent.check_grasp(self.peg, max_angle=20)),
+            'is_peg_pre_inserted': float(self.is_peg_pre_inserted()),
         }
 
 @register_env("PegInsertionSide_DrS_reuse-v0", max_episode_steps=100)
