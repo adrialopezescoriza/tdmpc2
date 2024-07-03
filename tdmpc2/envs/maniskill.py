@@ -10,15 +10,15 @@ import envs.tasks.envs_with_stage_indicators
 MANISKILL_TASKS = {
 	'lift-cube': dict(
 		env='LiftCube-v0',
-		control_mode='pd_ee_delta_pos',
+		control_mode='pd_ee_delta_pose',
 	),
 	'pick-cube': dict(
 		env='PickCube-v0',
-		control_mode='pd_ee_delta_pos',
+		control_mode='pd_ee_delta_pose',
 	),
 	'stack-cube': dict(
 		env='StackCube-v0',
-		control_mode='pd_ee_delta_pos',
+		control_mode='pd_ee_delta_pose',
 	),
 	'pick-ycb': dict(
 		env='PickSingleYCB-v0',
