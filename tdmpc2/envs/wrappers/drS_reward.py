@@ -47,8 +47,8 @@ class Discriminator(nn.Module):
             k = 3
             reward = k * stage_idx + stage_rewards[torch.arange(bs), stage_idx.long()]
             reward = reward / (k * self.n_stages) # reward is in (0, 1]
-            reward = reward - 2 # make the reward negative
-            #reward = reward + 1 # make the reward positive
+            #reward = reward - 2 # make the reward negative
+            reward = reward + 1 # make the reward positive
 
             return reward
         
