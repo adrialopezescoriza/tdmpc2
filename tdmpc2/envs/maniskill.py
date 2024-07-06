@@ -35,7 +35,7 @@ MANISKILL_TASKS = {
 	),
 	'stack-cube': dict(
 		env='StackCube_DrS_reuse-v0',
-		control_mode='pd_ee_delta_pose',
+		control_mode='pd_ee_delta_pos',
 		reward_mode='dense',
 	),
 	'peg-insertion': dict(
@@ -56,7 +56,7 @@ MANISKILL_TASKS = {
 	),
 	'stack-cube-semi': dict (
 		env='StackCube_DrS_reuse-v0',
-		control_mode='pd_ee_delta_pose',
+		control_mode='pd_ee_delta_pos',
 		reward_mode='semi_sparse', 
 	),
 	'peg-insertion-semi': dict (
@@ -76,7 +76,7 @@ MANISKILL_TASKS = {
 	),
 	'stack-cube-drS': dict (
 		env='StackCube_DrS_reuse-v0',
-		control_mode='pd_ee_delta_pose',
+		control_mode='pd_ee_delta_pos',
 		reward_mode='drS', 
 	),
 	'peg-insertion-drS': dict (
