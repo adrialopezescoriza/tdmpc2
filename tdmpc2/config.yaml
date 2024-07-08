@@ -24,6 +24,7 @@ tau: 0.01
 discount_denom: 5
 discount_min: 0.95
 discount_max: 0.995
+discount_hardcoded: 0.0 # Overrides heuristic discount calculation
 buffer_size: 1_000_000
 exp_name: default
 data_dir: ???
@@ -62,11 +63,14 @@ dropout: 0.01
 simnorm_dim: 8
 
 # logging
-wandb_project: ???
-wandb_entity: ???
-wandb_silent: false
-disable_wandb: true
-save_csv: true
+wandb_project: tdmpc2-drS
+wandb_entity: alopez
+wandb_silent: true
+disable_wandb: false
+save_csv: false
+
+# drS
+drS_ckpt: ???
 
 # misc
 save_video: true
