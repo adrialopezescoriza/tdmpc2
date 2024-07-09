@@ -217,17 +217,22 @@ class TDMPC2:
 		discount = self.discount[task].unsqueeze(-1) if self.cfg.multitask else self.discount
 		return reward + discount * self.model.Q(next_z, pi, task, return_type='min', target=True)
 
-	def update(self, buffer):
+	def update(self, buffer, get_reward = None):
 		"""
 		Main update function. Corresponds to one iteration of model learning.
 		
 		Args:
 			buffer (common.buffer.Buffer): Replay buffer.
+			get_reward (Optional[callable]): Optional reward computator for DrS reward computation
 		
 		Returns:
 			dict: Dictionary of training statistics.
 		"""
 		obs, action, reward, task = buffer.sample()
+
+		# DrS reward computation
+		if get_reward:
+			reward = get_reward(obs[1:], reward) # First observation not needed for reward computation
 	
 		# Compute targets
 		with torch.no_grad():

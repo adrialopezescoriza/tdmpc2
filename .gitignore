@@ -136,3 +136,6 @@ dmypy.json
 
 # Text editors
 .vscode
+
+# Datasets
+demo_data/
