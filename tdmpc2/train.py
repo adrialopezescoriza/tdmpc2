@@ -20,7 +20,7 @@ from common.logger import Logger
 torch.backends.cudnn.benchmark = True
 
 
-@hydra.main(config_name='config', config_path='.')
+@hydra.main(config_name='tdmpc2', config_path='./config')
 def train(cfg: dict):
 	"""
 	Script for training single-task / multi-task TD-MPC2 agents.

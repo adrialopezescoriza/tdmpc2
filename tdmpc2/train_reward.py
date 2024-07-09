@@ -20,7 +20,7 @@ from drS.trainer import DrsTrainer
 torch.backends.cudnn.benchmark = True
 
 
-@hydra.main(config_name='config', config_path='./drS/')
+@hydra.main(config_name='drS', config_path='./config/')
 def train(cfg: dict):
 	"""
 	Script for training single-task / multi-task TD-MPC2 agents.
