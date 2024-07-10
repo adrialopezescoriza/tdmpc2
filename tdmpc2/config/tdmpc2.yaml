@@ -90,3 +90,7 @@ action_dims: ???
 episode_lengths: ???
 seed_steps: ???
 bin_size: ???
+
+# environments
+maniskill:
+    action_repeat: 2

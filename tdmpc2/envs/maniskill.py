@@ -103,10 +103,11 @@ class ManiSkillWrapper(gym.Wrapper):
 		return self.env.reset()
 	
 	def step(self, action):
-		reward = 0
-		for _ in range(2):
+		# TODO: Revisit reward compunding with action repeat, this may not be the best way
+		reward = -np.inf
+		for _ in range(self.cfg.action_repeat):
 			obs, r, _, info = self.env.step(action)
-			reward += r
+			reward = max(reward, r)
 		return obs, reward, False, info
 
 	@property
@@ -137,7 +138,7 @@ def make_env(cfg):
 	if task_cfg.get("reward_mode", None) == "drS":
 		env = DrsRewardWrapper(env, cfg.drS_ckpt)
 	
-	env = ManiSkillWrapper(env, cfg)
+	env = ManiSkillWrapper(env, cfg.maniskill)
 	env = TimeLimit(env, max_episode_steps=100)
 	env.max_episode_steps = env._max_episode_steps
 	return env

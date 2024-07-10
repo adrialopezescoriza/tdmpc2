@@ -77,7 +77,7 @@ class Discriminator(nn.Module):
             stage_rewards = [
                 torch.tanh(self(next_s, stage_idx=i)) if self.trained[i] else torch.zeros(*bs + (1,), device=next_s.device)
             for i in range(self.n_stages)]
-            stage_rewards = torch.cat(stage_rewards + [torch.zeros(*bs + (1,), device=next_s.device)], dim=-1)
+            stage_rewards = torch.cat(stage_rewards + [torch.zeros(*bs + (1,), device=next_s.device)], dim=-1) # Dummy stage_reward for success state (always 0)
 
             k = 3
             reward = k * stage_idx + torch.gather(stage_rewards, -1, stage_idx.long()) # Selects stage index for each reward
