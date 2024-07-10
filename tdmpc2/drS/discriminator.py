@@ -31,6 +31,15 @@ class Discriminator(nn.Module):
     def total_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
+    def save(self, fp):
+        """
+		Save state dict of the agent to filepath.
+		
+		Args:
+			fp (str): Filepath to save state dict to.
+		"""
+        torch.save({"discriminator": self.state_dict()}, fp)
+
     def set_trained(self, stage_idx):
         self.trained[stage_idx] = True
 

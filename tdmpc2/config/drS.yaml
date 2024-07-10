@@ -16,6 +16,7 @@ steps: 10_000_000
 batch_size: 256
 buffer_size: 1_000_000
 exp_name: default
+save_freq: 500_000
 
 # logging
 wandb_project: tdmpc2-drS-learning

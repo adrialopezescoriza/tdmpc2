@@ -102,6 +102,12 @@ class DrsTrainer():
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
+			# Save DrS and Agent periodically
+			if self._step % self.cfg.save_freq == 0 and self._step > 0:
+					print("Saving agent and discriminator checkpoints...")
+					self.logger.save_agent(self.disc, identifier=f'drS_{self._step}')
+					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
+
 			# Reset environment
 			if done:
 				if eval_next:
@@ -162,14 +168,6 @@ class DrsTrainer():
 					agent_train_metrics = self.agent.update(self.replay_buffer, self.disc.get_reward)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
-
-			# Checkpoint
-			# if self.cfg.save_freq and (self._step >= self.cfg.total_timesteps or \
-			# 		(self._step - self.cfg.training_freq) // self.cfg.save_freq < self._step // self.cfg.save_freq):
-			# 	os.makedirs(f'{log_path}/checkpoints', exist_ok=True)
-			# 	torch.save({
-			# 		'discriminator': self.disc.state_dict(),
-			# 	}, f'{log_path}/checkpoints/{self._step}.pt')
 
 			self._step += 1
 	
