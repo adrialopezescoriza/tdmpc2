@@ -39,6 +39,7 @@ class Discriminator(nn.Module):
         return net(next_s)
 
     def update(self, stage_buffers):
+        disc_losses = []
         for stage_idx in range(self.n_stages):
             success_data = sample_from_multi_buffers(stage_buffers[stage_idx+1:], self._cfg.batch_size)
             if not success_data:
@@ -61,10 +62,11 @@ class Discriminator(nn.Module):
             pred = logits.detach() > 0
 
             self.set_trained(stage_idx)
+            disc_losses += [float(disc_loss.mean().item())]
 
-            return {
-                "discriminator_loss": float(disc_loss.mean().item()),
-            }
+        return {
+            "discriminator_loss": np.mean(disc_losses),
+        }
 
     def get_reward(self, next_s, stage_idx):
         '''
