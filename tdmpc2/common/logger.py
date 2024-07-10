@@ -14,6 +14,7 @@ CONSOLE_FORMAT = [
 	("episode", "E", "int"),
 	("step", "I", "int"),
 	("episode_reward", "R", "float"),
+	("episode_max_reward", "MAX_R", "float"),
 	("episode_success", "S", "float"),
 	("total_time", "T", "time"),
 ]

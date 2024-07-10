@@ -52,24 +52,27 @@ class DrsTrainer():
 
 	def eval(self):
 		"""Evaluate agent."""
-		ep_rewards, ep_successes = [], []
+		ep_rewards, ep_max_rewards, ep_successes = [], [], []
 		for i in range(self.cfg.eval_episodes):
-			obs, done, ep_reward, t = self.env.reset(), False, 0, 0
+			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), False, 0, -np.inf, 0
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=(i==0))
 			while not done:
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
+				ep_max_reward = max(ep_max_reward, reward)
 				t += 1
 				if self.cfg.save_video:
 					self.logger.video.record(self.env)
 			ep_rewards.append(ep_reward)
+			ep_max_rewards.append(ep_max_reward)
 			ep_successes.append(info['success'])
 			if self.cfg.save_video:
 				self.logger.video.save(self._step)
 		return dict(
 			episode_reward=np.nanmean(ep_rewards),
+			episode_max_reward=np.nanmean(ep_max_rewards),
 			episode_success=np.nanmean(ep_successes),
 		)
 
@@ -110,6 +113,7 @@ class DrsTrainer():
 				if self._step > 0:
 					train_metrics.update(
 						episode_reward=torch.tensor([td['reward'] for td in self._tds[1:]]).sum(),
+						episode_max_reward=torch.tensor([td['reward'] for td in self._tds[1:]]).max(),
 						episode_success=info['success'],
 					)
 					train_metrics.update(self.common_metrics())
@@ -158,6 +162,14 @@ class DrsTrainer():
 					agent_train_metrics = self.agent.update(self.replay_buffer, self.disc.get_reward)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
+
+			# Checkpoint
+			# if self.cfg.save_freq and (self._step >= self.cfg.total_timesteps or \
+			# 		(self._step - self.cfg.training_freq) // self.cfg.save_freq < self._step // self.cfg.save_freq):
+			# 	os.makedirs(f'{log_path}/checkpoints', exist_ok=True)
+			# 	torch.save({
+			# 		'discriminator': self.disc.state_dict(),
+			# 	}, f'{log_path}/checkpoints/{self._step}.pt')
 
 			self._step += 1
 	
