@@ -27,6 +27,7 @@ class DiscriminatorBuffer(object):
             
         self.next_observations[self.pos:self.pos+l] = next_obs.copy()
         self.pos = (self.pos + l) % self.buffer_size
+        self.next_observations = np.float32(self.next_observations)
 
     def sample(self, batch_size):
         idxs = np.random.randint(0, self.size, size=batch_size)
