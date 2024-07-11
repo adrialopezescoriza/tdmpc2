@@ -9,10 +9,10 @@ from .data_utils import sample_from_multi_buffers
 
 
 class Discriminator(nn.Module):
-    def __init__(self, envs, cfg):
+    def __init__(self, envs, cfg, state_shape=None):
         super().__init__()
         self.n_stages = envs.n_stages
-        state_shape = np.prod(envs.observation_space.shape)
+        state_shape = np.prod(state_shape) if state_shape else np.prod(envs.observation_space.shape)
         self.nets = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(state_shape, 32),
@@ -47,7 +47,7 @@ class Discriminator(nn.Module):
         net = self.nets[stage_idx]
         return net(next_s)
 
-    def update(self, stage_buffers):
+    def update(self, stage_buffers, encoder_function=None):
         disc_losses = []
         for stage_idx in range(self.n_stages):
             success_data = sample_from_multi_buffers(stage_buffers[stage_idx+1:], self._cfg.batch_size)
@@ -60,6 +60,10 @@ class Discriminator(nn.Module):
                 torch.zeros((self._cfg.batch_size, 1), device=self.device), # fail label is 0
                 torch.ones((self._cfg.batch_size, 1), device=self.device), # success label is 1
             ], dim=0)
+
+            if encoder_function:
+                with torch.no_grad():
+                    disc_next_obs = encoder_function(disc_next_obs)
 
             logits = self(disc_next_obs, stage_idx)
             disc_loss = F.binary_cross_entropy_with_logits(logits, disc_labels)

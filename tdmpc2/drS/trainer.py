@@ -3,6 +3,7 @@ from time import time
 import numpy as np
 import torch
 from tensordict.tensordict import TensorDict
+from functools import partial
 
 from .discriminator import Discriminator
 from .disc_buffer import DiscriminatorBuffer
@@ -21,7 +22,7 @@ class DrsTrainer():
 		assert env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
 
 		# DrS specific
-		self.disc = Discriminator(env, cfg.drS_discriminator)
+		self.disc = Discriminator(env, cfg.drS_discriminator, state_shape=(cfg.latent_dim,))
 		self.stage_buffers = [DiscriminatorBuffer(
 			cfg.drS_discriminator.buffer_size,
 			env.observation_space,
@@ -164,7 +165,8 @@ class DrsTrainer():
 				else:
 					num_updates = 1
 				for _ in range(num_updates):
-					disc_train_metrics = self.disc.update(self.stage_buffers)
+					disc_train_metrics = self.disc.update(self.stage_buffers,
+										   encoder_function=partial(self.agent.model.encode, task=None))
 					agent_train_metrics = self.agent.update(self.replay_buffer, self.disc.get_reward)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
