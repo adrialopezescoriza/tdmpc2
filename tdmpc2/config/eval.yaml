@@ -1,0 +1,20 @@
+defaults:
+    - tdmpc2
+    - _self_
+
+# environment
+task: stack-cube-semi
+obs: state
+
+# evaluation
+checkpoint: /home/adria/tdmpc2/ckpt/StackCube.pt
+eval_episodes: 200
+
+# saving
+save_trajectory: true
+success_only: true
+log_path: .
+
+# misc
+multitask: false
+
