@@ -104,10 +104,9 @@ class ManiSkillWrapper(gym.Wrapper):
 	
 	def step(self, action):
 		# TODO: Revisit reward compunding with action repeat, this may not be the best way
-		reward = -np.inf
 		for _ in range(self.cfg.action_repeat):
 			obs, r, _, info = self.env.step(action)
-			reward = max(reward, r)
+			reward = r # Options: max, sum, min
 		return obs, reward, False, info
 
 	@property
