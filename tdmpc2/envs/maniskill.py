@@ -43,6 +43,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'open-cabinet': dict(
+		env='OpenCabinetDoor_DrS_learn-v0',
+		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
+		reward_mode='dense',
+	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
 		env='PickAndPlace_DrS_reuse-v0',
@@ -64,6 +69,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
+	'open-cabinet-semi': dict(
+		env='OpenCabinetDoor_DrS_learn-v0',
+		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
+		reward_mode='semi_sparse',
+	),
 	'pick-place-drS': dict (
 		env='PickAndPlace_DrS_reuse-v0',
 		control_mode='pd_ee_delta_pose',
@@ -83,6 +93,11 @@ MANISKILL_TASKS = {
 		env='PegInsertionSide_DrS_reuse-v0',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
+	),
+	'open-cabinet-drS': dict(
+		env='OpenCabinetDoor_DrS_learn-v0',
+		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
+		reward_mode='drS',
 	),
 }
 
