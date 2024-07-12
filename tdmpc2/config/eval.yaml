@@ -14,6 +14,7 @@ eval_episodes: 200
 save_trajectory: true
 success_only: true
 log_path: .
+save_video: false
 
 # misc
 multitask: false
