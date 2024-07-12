@@ -3,7 +3,7 @@ defaults:
     - _self_
 
 # environment
-task: stack-cube-semi
+task: ???
 obs: state
 
 # evaluation
@@ -26,8 +26,10 @@ disable_wandb: false
 save_csv: false
 
 # drS
-demo_path: /home/adria/tdmpc2/demo_data/StackCube_200.pkl
+demo_path: ???
 drS_discriminator:
     disc_lr: 3e-4
     batch_size: 256
     buffer_size: 10_000_000
+
+drs_input: ??? # no effect, just for logging purposes
