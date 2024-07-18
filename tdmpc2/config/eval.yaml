@@ -5,6 +5,7 @@ defaults:
 # environment
 task: stack-cube-semi
 obs: state
+num_envs: 16
 
 # evaluation
 checkpoint: /home/adria/tdmpc2/ckpt/StackCube.pt

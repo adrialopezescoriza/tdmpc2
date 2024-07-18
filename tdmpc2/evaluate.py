@@ -17,6 +17,7 @@ from tdmpc2 import TDMPC2
 
 torch.backends.cudnn.benchmark = True
 
+
 @hydra.main(config_name='eval', config_path='./config/')
 def evaluate(cfg: dict):
 	"""
@@ -60,7 +61,7 @@ def evaluate(cfg: dict):
 
 	# Trajectory saver
 	if cfg.save_trajectory:
-		saver = BaseTrajectorySaver(1, cfg.log_path, cfg.success_only)
+		saver = BaseTrajectorySaver(cfg.num_envs, cfg.log_path, cfg.success_only)
 	
 	# Evaluate
 	if cfg.multitask:
@@ -77,10 +78,10 @@ def evaluate(cfg: dict):
 			task_idx = None
 		ep_rewards, ep_successes = [], []
 		while (saver.num_traj if cfg.save_trajectory else len(ep_rewards)) < cfg.eval_episodes:
-			obs, done, ep_reward, t = env.reset(task_idx=task_idx), False, 0, 0
+			obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
 			if cfg.save_video:
 				frames = [env.render()]
-			while not done:
+			while not done.all():
 				prev_obs = obs
 				action = agent.act(obs, t0=t==0, task=task_idx)
 				obs, reward, done, info = env.step(action)
@@ -89,10 +90,10 @@ def evaluate(cfg: dict):
 				if cfg.save_video:
 					frames.append(env.render())
 				if cfg.save_trajectory:
-					terminated = done and not info['truncated']
-					saver.add_transition([prev_obs.numpy()], [action.numpy()], [obs.numpy()], [reward.numpy()], [terminated], [info]) #TODO: This is quite ugly, should fix trajectory_saver
-			ep_rewards.append(ep_reward)
-			ep_successes.append(info['success'])
+					terminated = torch.logical_and(info['success'], done) # TODO: Doesn't take into account failure terminations
+					saver.add_transition(prev_obs.numpy(), action.numpy(), obs.numpy(), reward.numpy(), terminated.numpy(), [dict(zip(info,t)) for t in zip(*info.values())])
+			ep_rewards.append(ep_reward.tolist())
+			ep_successes.append(info['success'].tolist())
 			if cfg.save_video:
 				imageio.mimsave(
 					os.path.join(video_dir, f'{task}-{len(ep_rewards)}.mp4'), frames, fps=15)

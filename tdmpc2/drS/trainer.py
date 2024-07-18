@@ -7,9 +7,10 @@ from functools import partial
 
 from .discriminator import Discriminator
 from .disc_buffer import DiscriminatorBuffer
+from trainer.base import Trainer
 
 
-class DrsTrainer():
+class DrsTrainer(Trainer):
 	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
 
 	def __init__(self, cfg, env, agent, buffer, logger):
@@ -53,28 +54,28 @@ class DrsTrainer():
 
 	def eval(self):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards, ep_successes = [], [], []
-		for i in range(self.cfg.eval_episodes):
-			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), False, 0, -np.inf, 0
+		ep_rewards, ep_max_rewards = [], []
+		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
+			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=(i==0))
-			while not done:
+			while not done.any():
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
-				ep_max_reward = max(ep_max_reward, reward)
+				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
 				t += 1
 				if self.cfg.save_video:
 					self.logger.video.record(self.env)
+			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
-			ep_successes.append(info['success'])
 			if self.cfg.save_video:
 				self.logger.video.save(self._step)
 		return dict(
-			episode_reward=np.nanmean(ep_rewards),
-			episode_max_reward=np.nanmean(ep_max_rewards),
-			episode_success=np.nanmean(ep_successes),
+			episode_reward=torch.cat(ep_rewards).mean(),
+			episode_max_reward=torch.cat(ep_max_rewards).mean(),
+			episode_success=info['success'].float().mean(),
 		)
 
 	def to_td(self, obs, action=None, reward=None):
@@ -86,17 +87,17 @@ class DrsTrainer():
 		if action is None:
 			action = torch.full_like(self.env.rand_act(), float('nan'))
 		if reward is None:
-			reward = torch.tensor(float('nan'))
+			reward = torch.tensor(float('nan')).repeat(self.cfg.num_envs)
 		td = TensorDict(dict(
 			obs=obs,
 			action=action.unsqueeze(0),
 			reward=reward.unsqueeze(0),
-		), batch_size=(1,))
+		), batch_size=(1, self.cfg.num_envs,))
 		return td
 
 	def train(self):
 		"""Train agent and discriminator"""
-		train_metrics, done, eval_next = {}, True, True
+		train_metrics, done, eval_next = {}, torch.tensor(True), True
 		while self._step <= self.cfg.steps:
 
 			# Evaluate agent periodically
@@ -110,7 +111,8 @@ class DrsTrainer():
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
 
 			# Reset environment
-			if done:
+			if done.any():
+				assert done.all(), 'Vectorized environments must reset all environments at once.'
 				if eval_next:
 					eval_metrics = self.eval()
 					eval_metrics.update(self.common_metrics())
@@ -118,20 +120,21 @@ class DrsTrainer():
 					eval_next = False
 
 				if self._step > 0:
+					tds = torch.cat(self._tds)
 					train_metrics.update(
-						episode_reward=torch.tensor([td['reward'] for td in self._tds[1:]]).sum(),
-						episode_max_reward=torch.tensor([td['reward'] for td in self._tds[1:]]).max(),
-						episode_success=info['success'],
+						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
+						episode_max_reward=np.nanmax(tds['reward'], axis=0).mean(),
+						episode_success=info['success'].float().nanmean(),
 					)
 					train_metrics.update(self.common_metrics())
 					self.logger.log(train_metrics, 'train')
-					self._ep_idx = self.replay_buffer.add(torch.cat(self._tds))
+					self._ep_idx = self.replay_buffer.add(tds)
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
-				self._observations = np.empty((0,) + self.env.observation_space.shape)
-				best_step = 0
-				best_reward = -np.inf
+				self._observations = torch.empty((self.cfg.num_envs,0) + self.env.observation_space.shape)
+				best_step = [0 for _ in range(self.cfg.num_envs)]
+				best_reward = [-np.inf for _ in range(self.cfg.num_envs)]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
@@ -140,30 +143,33 @@ class DrsTrainer():
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward))
-			self._observations = np.vstack((self._observations, obs))
+			self._observations = torch.cat((self._observations, obs.unsqueeze(1)), dim=1)
 
 			# Get longest possible trajectory (DrS)
-			if reward >= best_reward:
-				best_reward = reward
-				best_step = len(self._tds) - 1
+			for i, r in enumerate(reward):
+				if r >= best_reward[i]:
+					best_reward[i] = r
+					best_step[i] = len(self._tds) - 1
 
-			# Add experience to corresponding disc buffer (DrS)
-			if done:
-				if info["success"]:
-					stage_idx = self.env.n_stages
-				elif self.env.n_stages > 1:
-					stage_idx = int(best_reward)
-				else:
-					stage_idx = 0
-				self.stage_buffers[stage_idx].add(self._observations[:best_step])
+			# Add experiences to corresponding disc buffer (DrS)
+			if done.any():
+				assert done.all(), 'Vectorized environments must reset all environments at once.'
+				for i in range(self.cfg.num_envs):
+					if info["success"][i]:
+						stage_idx = self.env.n_stages
+					elif self.env.n_stages > 1:
+						stage_idx = int(best_reward[i])
+					else:
+						stage_idx = 0
+					self.stage_buffers[stage_idx].add(self._observations[i, :best_step[i]])
 			
 			# Update discriminator and agent
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
-					num_updates = self.cfg.seed_steps
-					print('Pretraining on seed data...')
+					num_updates = int(self.cfg.seed_steps / self.cfg.steps_per_update)
+					print('Pretraining agent on seed data...')
 				else:
-					num_updates = 1
+					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
 					disc_train_metrics = self.disc.update(self.stage_buffers,
 										   encoder_function=partial(self.agent.model.encode, task=None))
@@ -171,6 +177,6 @@ class DrsTrainer():
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 
-			self._step += 1
+			self._step += self.cfg.num_envs
 	
 		self.logger.finish(self.agent)

@@ -3,8 +3,9 @@ defaults:
     - _self_
 
 # environment
-task: ???
+task: stack-cube-semi
 obs: state
+num_envs: 16
 
 # evaluation
 checkpoint: ???
@@ -14,6 +15,7 @@ eval_freq: 50000
 # training
 steps: 10_000_000
 batch_size: 256
+steps_per_update: 4
 buffer_size: 1_000_000
 exp_name: default
 save_freq: 500_000

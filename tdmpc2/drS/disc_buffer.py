@@ -15,7 +15,13 @@ class DiscriminatorBuffer(object):
         return self.buffer_size if self.full else self.pos
 
     def add(self, next_obs):
+        '''
+            Adds an element into the existing circular buffer
+            next_obs: np.ndarray or torch.Tensor
+        '''
         l = next_obs.shape[0]
+
+        assert isinstance(next_obs, np.ndarray) or isinstance (next_obs, torch.Tensor), "Input element is not np.array or torch.Tensor!"
         
         while self.pos + l >= self.buffer_size:
             self.full = True
@@ -25,7 +31,7 @@ class DiscriminatorBuffer(object):
             next_obs = next_obs[k:]
             l = next_obs.shape[0]
             
-        self.next_observations[self.pos:self.pos+l] = next_obs.copy()
+        self.next_observations[self.pos:self.pos+l] = next_obs.copy() if isinstance(next_obs, np.ndarray) else next_obs.clone()
         self.pos = (self.pos + l) % self.buffer_size
         self.next_observations = np.float32(self.next_observations)
 
