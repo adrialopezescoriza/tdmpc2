@@ -35,4 +35,6 @@ drS_discriminator:
     batch_size: 256
     buffer_size: 10_000_000
 
-drs_input: ??? # no effect, just for logging purposes
+# misc, no effect, just for logging organization purposes
+drs_input: ???
+tag: ???

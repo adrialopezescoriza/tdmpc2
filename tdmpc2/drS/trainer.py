@@ -14,30 +14,27 @@ from trainer.base import Trainer
 class DrsTrainer(Trainer):
 	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
 
-	def __init__(self, cfg, env, agent, buffer, logger):
-		self.cfg = cfg
-		self.env = env
-		self.agent = agent
-		self.replay_buffer = buffer
-		self.logger = logger
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
-		assert env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
+		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
 
 		# DrS specific
-		self.disc = Discriminator(env, cfg.drS_discriminator, state_shape=(cfg.latent_dim,))
+		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
 		self.stage_buffers = [DiscriminatorBuffer(
-			cfg.drS_discriminator.buffer_size,
-			env.observation_space,
-			env.action_space,
+			self.cfg.drS_discriminator.buffer_size,
+			self.env.observation_space,
+			self.env.action_space,
 			self.agent.device,
-		) for _ in range(env.n_stages + 1)]
+		) for _ in range(self.env.n_stages + 1)]
 
-		if cfg.demo_path:
+		if self.cfg.demo_path:
 			from .data_utils import load_demo_dataset, load_dataset_as_td
-			demo_dataset = load_dataset_as_td(cfg.demo_path)
+			demo_dataset = load_dataset_as_td(self.cfg.demo_path)
 			self.stage_buffers[-1].add(next_obs=torch.cat(demo_dataset)['obs'])
 
-			if cfg.prefill_buffer_with_demos:
+			if self.cfg.prefill_buffer_with_demos:
+				# NOTE: Make sure demonstrations contain same type of rewards as online environment!
 				[self.replay_buffer.add(_td.unsqueeze(0)) for _td in demo_dataset]
 				termcolor.colored(f"Prefilled buffer with {len(demo_dataset)} trajectories", "green")
 
@@ -56,14 +53,22 @@ class DrsTrainer(Trainer):
 			episode=self._ep_idx,
 			total_time=time() - self._start_time,
 		)
+	
+	def record_video_episode(self):
+		obs, done, t = self.video_env.reset(), False, 0
+		self.logger.video.init(self.video_env, enabled=True)
+		while not done:
+			action = self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
+			obs, _, done, _ = self.video_env.step(action.squeeze(0))
+			t += 1
+			self.logger.video.record(self.video_env)
+		self.logger.video.save(self._step)
 
 	def eval(self):
 		"""Evaluate agent."""
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
-			if self.cfg.save_video:
-				self.logger.video.init(self.env, enabled=(i==0))
 			while not done.any():
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
@@ -77,6 +82,11 @@ class DrsTrainer(Trainer):
 			ep_max_rewards.append(ep_max_reward)
 			if self.cfg.save_video:
 				self.logger.video.save(self._step)
+
+		# Video Episode (single env), no metrics logging
+		if self.cfg.save_video:
+			self.record_video_episode()
+			
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).mean(),

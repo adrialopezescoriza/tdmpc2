@@ -55,7 +55,7 @@ def make_multitask_env(cfg):
 
 def make_env(cfg):
 	"""
-	Make an environment for TD-MPC2 experiments.
+	Make a vectorized environment for TD-MPC2 experiments.
 	"""
 	gym.logger.set_level(40)
 	if cfg.multitask:
@@ -84,4 +84,29 @@ def make_env(cfg):
 	cfg.action_dim = env.action_space.shape[0]
 	cfg.episode_length = env.max_episode_steps
 	cfg.seed_steps = max(1000, 5*cfg.episode_length) * cfg.num_envs
+	return env
+
+## TODO: Mostly repeated code from above function
+def make_single_env(cfg):
+	"""
+	Make a single environment for TD-MPC2 experiments.
+	"""
+	gym.logger.set_level(40)
+	if cfg.multitask:
+		env = make_multitask_env(cfg)
+
+	else:
+		env = None
+		for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env]:
+			try:
+				env = fn(cfg)
+				break
+			except ValueError:
+				pass
+		if env is None:
+			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
+		env = TensorWrapper(env)
+	if cfg.get('obs', 'state') == 'rgb':
+		env = PixelWrapper(cfg, env)
+
 	return env

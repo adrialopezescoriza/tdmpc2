@@ -93,7 +93,7 @@ class VideoRecorder:
 
 	def record(self, env):
 		if self.enabled:
-			self.frames.append(env.render()) # TODO: Solve with parallel envs
+			self.frames.append(env.render())
 
 	def save(self, step, key='videos/eval_video'):
 		if self.enabled and len(self.frames) > 0:

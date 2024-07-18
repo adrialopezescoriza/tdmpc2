@@ -23,6 +23,16 @@ class OnlineTrainer(Trainer):
 			episode=self._ep_idx,
 			total_time=time() - self._start_time,
 		)
+	
+	def record_video_episode(self):
+		obs, done, t = self.video_env.reset(), False, 0
+		self.logger.video.init(self.video_env, enabled=True)
+		while not done:
+			action = self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
+			obs, _, done, _ = self.video_env.step(action.squeeze(0))
+			t += 1
+			self.logger.video.record(self.video_env)
+		self.logger.video.save(self._step)
 
 	def eval(self):
 		"""Evaluate agent."""
@@ -44,6 +54,11 @@ class OnlineTrainer(Trainer):
 			ep_max_rewards.append(ep_max_reward)
 			if self.cfg.save_video:
 				self.logger.video.save(self._step)
+
+		# Video Episode (single env), no metrics logging
+		if self.cfg.save_video:
+			self.record_video_episode()
+		
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).mean(),

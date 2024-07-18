@@ -110,7 +110,7 @@ class TDMPC2:
 		Plan a sequence of actions using the learned world model.
 		
 		Args:
-			z (torch.Tensor): Latent state from which to plan.
+			z (torch.Tensor): Latent state from which to plan. Shape (b_size, z_dim)
 			t0 (bool): Whether this is the first observation in the episode.
 			eval_mode (bool): Whether to use the mean of the action distribution.
 			task (Torch.Tensor): Task index (only used for multi-task experiments).
@@ -119,8 +119,9 @@ class TDMPC2:
 			torch.Tensor: Action to take in the environment.
 		"""		
 		# Sample policy trajectories
+		b_size = z.shape[0]
 		if self.cfg.num_pi_trajs > 0:
-			pi_actions = torch.empty(self.cfg.num_envs, self.cfg.horizon, self.cfg.num_pi_trajs, self.cfg.action_dim, device=self.device)
+			pi_actions = torch.empty(b_size, self.cfg.horizon, self.cfg.num_pi_trajs, self.cfg.action_dim, device=self.device)
 			_z = z.unsqueeze(1).repeat(1, self.cfg.num_pi_trajs, 1)
 			for t in range(self.cfg.horizon-1):
 				pi_actions[:,t] = self.model.pi(_z, task)[1]
@@ -129,11 +130,11 @@ class TDMPC2:
 
 		# Initialize state and parameters
 		z = z.unsqueeze(1).repeat(1, self.cfg.num_samples, 1)
-		mean = torch.zeros(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
-		std = self.cfg.max_std*torch.ones(self.cfg.num_envs, self.cfg.horizon, self.cfg.action_dim, device=self.device)
+		mean = torch.zeros(b_size, self.cfg.horizon, self.cfg.action_dim, device=self.device)
+		std = self.cfg.max_std*torch.ones(b_size, self.cfg.horizon, self.cfg.action_dim, device=self.device)
 		if not t0:
 			mean[:, :-1] = self._prev_mean[:, 1:]
-		actions = torch.empty(self.cfg.num_envs, self.cfg.horizon, self.cfg.num_samples, self.cfg.action_dim, device=self.device)
+		actions = torch.empty(b_size, self.cfg.horizon, self.cfg.num_samples, self.cfg.action_dim, device=self.device)
 		if self.cfg.num_pi_trajs > 0:
 			actions[:, :, :self.cfg.num_pi_trajs] = pi_actions
 	
@@ -142,7 +143,7 @@ class TDMPC2:
 
 			# Sample actions
 			actions[:, :, self.cfg.num_pi_trajs:] = (mean.unsqueeze(2) + std.unsqueeze(2) * \
-				torch.randn(self.cfg.num_envs, self.cfg.horizon, self.cfg.num_samples-self.cfg.num_pi_trajs, self.cfg.action_dim, device=std.device)) \
+				torch.randn(b_size, self.cfg.horizon, self.cfg.num_samples-self.cfg.num_pi_trajs, self.cfg.action_dim, device=std.device)) \
 				.clamp(-1, 1)
 			if self.cfg.multitask:
 				actions = actions * self.model._action_masks[task]
