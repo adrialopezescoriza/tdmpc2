@@ -2,7 +2,7 @@ from time import time
 
 import numpy as np
 import torch
-import termcolor
+from termcolor import colored
 from tensordict.tensordict import TensorDict
 from functools import partial
 
@@ -35,8 +35,8 @@ class DrsTrainer(Trainer):
 
 			if self.cfg.prefill_buffer_with_demos:
 				# NOTE: Make sure demonstrations contain same type of rewards as online environment!
-				[self.replay_buffer.add(_td.unsqueeze(0)) for _td in demo_dataset]
-				termcolor.colored(f"Prefilled buffer with {len(demo_dataset)} trajectories", "green")
+				[self.buffer.add(_td.unsqueeze(1)) for _td in demo_dataset]
+				print(colored(f"Prefilled buffer with {len(demo_dataset)} trajectories", "green"))
 
 		self._step = 0
 		self._ep_idx = 0
@@ -143,7 +143,7 @@ class DrsTrainer(Trainer):
 					)
 					train_metrics.update(self.common_metrics())
 					self.logger.log(train_metrics, 'train')
-					self._ep_idx = self.replay_buffer.add(tds)
+					self._ep_idx = self.buffer.add(tds)
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
@@ -188,7 +188,7 @@ class DrsTrainer(Trainer):
 				for _ in range(num_updates):
 					disc_train_metrics = self.disc.update(self.stage_buffers,
 										   encoder_function=partial(self.agent.model.encode, task=None))
-					agent_train_metrics = self.agent.update(self.replay_buffer, self.disc.get_reward)
+					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 
