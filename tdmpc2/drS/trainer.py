@@ -2,6 +2,7 @@ from time import time
 
 import numpy as np
 import torch
+import termcolor
 from tensordict.tensordict import TensorDict
 from functools import partial
 
@@ -32,9 +33,13 @@ class DrsTrainer(Trainer):
 		) for _ in range(env.n_stages + 1)]
 
 		if cfg.demo_path:
-			from .data_utils import load_demo_dataset
-			demo_dataset = load_demo_dataset(cfg.demo_path, keys=['next_observations'])
-			self.stage_buffers[-1].add(next_obs=demo_dataset['next_observations'])
+			from .data_utils import load_demo_dataset, load_dataset_as_td
+			demo_dataset = load_dataset_as_td(cfg.demo_path)
+			self.stage_buffers[-1].add(next_obs=torch.cat(demo_dataset)['obs'])
+
+			if cfg.prefill_buffer_with_demos:
+				[self.replay_buffer.add(_td.unsqueeze(0)) for _td in demo_dataset]
+				termcolor.colored(f"Prefilled buffer with {len(demo_dataset)} trajectories", "green")
 
 		self._step = 0
 		self._ep_idx = 0

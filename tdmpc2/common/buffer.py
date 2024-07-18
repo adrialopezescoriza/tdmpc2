@@ -82,14 +82,18 @@ class Buffer():
 		return self._to_device(obs, action, reward, task)
 
 	def add(self, td):
-		"""Add an episode to the buffer."""
-		td['episode'] = torch.ones_like(td['reward'], dtype=torch.int64) * torch.arange(self._num_eps, self._num_eps+self.cfg.num_envs)
+		"""
+		Add a multi-env episode to the buffer.
+		Expects `tds` to be a TensorDict with batch size TxB
+		"""
+		b_size = td.shape[1]
+		td['episode'] = torch.ones_like(td['reward'], dtype=torch.int64) * torch.arange(self._num_eps, self._num_eps+b_size)
 		td = td.permute(1, 0)
 		if self._num_eps == 0:
 			self._buffer = self._init(td[0])
-		for i in range(self.cfg.num_envs):
+		for i in range(b_size):
 			self._buffer.extend(td[i])
-		self._num_eps += self.cfg.num_envs
+		self._num_eps += b_size
 		return self._num_eps
 
 	def sample(self):
