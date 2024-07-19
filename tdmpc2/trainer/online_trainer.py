@@ -47,13 +47,9 @@ class OnlineTrainer(Trainer):
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
 				t += 1
-				if self.cfg.save_video:
-					self.logger.video.record(self.env)
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
-			if self.cfg.save_video:
-				self.logger.video.save(self._step)
 
 		# Video Episode (single env), no metrics logging
 		if self.cfg.save_video:
