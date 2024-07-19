@@ -28,6 +28,10 @@ class DrsTrainer(Trainer):
 			self.agent.device,
 		) for _ in range(self.env.n_stages + 1)]
 
+		self._step = 0
+		self._ep_idx = 0
+		self._start_time = time()
+
 		if self.cfg.demo_path:
 			from .data_utils import load_demo_dataset, load_dataset_as_td
 			demo_dataset = load_dataset_as_td(self.cfg.demo_path)
@@ -35,12 +39,9 @@ class DrsTrainer(Trainer):
 
 			if self.cfg.prefill_buffer_with_demos:
 				# NOTE: Make sure demonstrations contain same type of rewards as online environment!
-				[self.buffer.add(_td.unsqueeze(1)) for _td in demo_dataset]
-				print(colored(f"Prefilled buffer with {len(demo_dataset)} trajectories", "green"))
-
-		self._step = 0
-		self._ep_idx = 0
-		self._start_time = time()
+				for _td in demo_dataset:
+					self._ep_idx = self.buffer.add(_td.unsqueeze(1))
+				print(colored(f"Prefilled buffer with {self._ep_idx} trajectories", "green"))
 		
 		print('Agent Architecture:', self.agent.model)
 		print('Discriminator Architecture:', self.disc)
@@ -181,7 +182,7 @@ class DrsTrainer(Trainer):
 			# Update discriminator and agent
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
-					num_updates = int(self.cfg.seed_steps / self.cfg.steps_per_update)
+					num_updates = max(1, int(self.cfg.seed_steps / self.cfg.steps_per_update))
 					print('Pretraining agent on seed data...')
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))

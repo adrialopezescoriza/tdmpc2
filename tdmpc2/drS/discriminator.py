@@ -87,6 +87,7 @@ class Discriminator(nn.Module):
             stage_idx : torch.Tensor (length, batch_size, 1)
         '''
         with torch.no_grad():
+            assert (stage_idx >= 0).all() and (stage_idx <= self.n_stages).all(), "Stage idx is out of bounds!"
             bs = stage_idx.shape[:-1]
             
             stage_rewards = [
