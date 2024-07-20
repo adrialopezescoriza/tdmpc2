@@ -19,6 +19,7 @@ steps_per_update: 4 # utd = steps_per_update / num_envs (in this implementation)
 buffer_size: 1_000_000
 exp_name: default
 save_freq: 500_000
+oversample_ratio: 0.5
 
 # logging
 wandb_project: tdmpc2-drS-learning

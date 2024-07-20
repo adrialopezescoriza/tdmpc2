@@ -16,6 +16,7 @@ from tdmpc2 import TDMPC2
 from common.logger import Logger
 
 from drS.trainer import DrsTrainer
+from drS.ensemble_buffer import EnsembleBuffer
 
 torch.backends.cudnn.benchmark = True
 
@@ -51,7 +52,7 @@ def train(cfg: dict):
 		cfg=cfg,
 		env=make_env(cfg),
 		agent=TDMPC2(cfg),
-		buffer=Buffer(cfg),
+		buffer=EnsembleBuffer(cfg) if cfg.prefill_buffer_with_demos else Buffer(cfg),
 		logger=Logger(cfg),
 		video_env=make_single_env(cfg) if cfg.save_video else None,
 	)

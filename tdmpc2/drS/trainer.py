@@ -36,12 +36,6 @@ class DrsTrainer(Trainer):
 			from .data_utils import load_demo_dataset, load_dataset_as_td
 			demo_dataset = load_dataset_as_td(self.cfg.demo_path)
 			self.stage_buffers[-1].add(next_obs=torch.cat(demo_dataset)['obs'])
-
-			if self.cfg.prefill_buffer_with_demos:
-				# NOTE: Make sure demonstrations contain same type of rewards as online environment!
-				for _td in demo_dataset:
-					self._ep_idx = self.buffer.add(_td.unsqueeze(1))
-				print(colored(f"Prefilled buffer with {self._ep_idx} trajectories", "green"))
 		
 		print('Agent Architecture:', self.agent.model)
 		print('Discriminator Architecture:', self.disc)
