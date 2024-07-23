@@ -12,11 +12,19 @@ from termcolor import colored
 from common.parser import parse_cfg
 from common.seed import set_seed
 from common.trajectory_saver import BaseTrajectorySaver
-from envs import make_env
+from envs import make_env, make_single_env
 from tdmpc2 import TDMPC2
 
 torch.backends.cudnn.benchmark = True
 
+def make_video(env, agent, task_idx):
+	video_obs, done, t = env.reset(task_idx=task_idx), False, 0
+	frames = [env.render()]
+	while not done:
+		video_action = agent.act(video_obs.unsqueeze(0), t0=t==0, task=task_idx)
+		video_obs, _, done, _ = env.step(video_action.squeeze())
+		frames.append(env.render())
+	return frames
 
 @hydra.main(config_name='eval', config_path='./config/')
 def evaluate(cfg: dict):
@@ -53,6 +61,7 @@ def evaluate(cfg: dict):
 
 	# Make environment
 	env = make_env(cfg)
+	video_env = make_single_env(cfg) if cfg.save_video else None
 
 	# Load agent
 	agent = TDMPC2(cfg)
@@ -61,7 +70,7 @@ def evaluate(cfg: dict):
 
 	# Trajectory saver
 	if cfg.save_trajectory:
-		saver = BaseTrajectorySaver(cfg.num_envs, cfg.log_path, cfg.success_only)
+		saver = BaseTrajectorySaver(cfg.num_envs, cfg.log_path, cfg.success_only, cfg.eval_episodes)
 	
 	# Evaluate
 	if cfg.multitask:
@@ -69,7 +78,7 @@ def evaluate(cfg: dict):
 	else:
 		print(colored(f'Evaluating agent on {cfg.task}:', 'yellow', attrs=['bold']))
 	if cfg.save_video:
-		video_dir = os.path.join(cfg.work_dir, 'videos')
+		video_dir = os.path.join(cfg.log_path, 'videos')
 		os.makedirs(video_dir, exist_ok=True)
 	scores = []
 	tasks = cfg.tasks if cfg.multitask else [cfg.task]
@@ -78,20 +87,26 @@ def evaluate(cfg: dict):
 			task_idx = None
 		ep_rewards, ep_successes = [], []
 		while (saver.num_traj if cfg.save_trajectory else len(ep_rewards)) < cfg.eval_episodes:
-			obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
 			if cfg.save_video:
-				frames = [env.render()]
+				frames = make_video(video_env, agent, task_idx)
+				imageio.mimsave(
+					os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
+			obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
 			while not done.all():
 				prev_obs = obs
 				action = agent.act(obs, t0=t==0, task=task_idx)
 				obs, reward, done, info = env.step(action)
 				ep_reward += reward
 				t += 1
-				if cfg.save_video:
-					frames.append(env.render())
 				if cfg.save_trajectory:
-					terminated = torch.logical_and(info['success'], done) # TODO: Doesn't take into account failure terminations
-					saver.add_transition(prev_obs.numpy(), action.numpy(), obs.numpy(), reward.numpy(), terminated.numpy(), [dict(zip(info,t)) for t in zip(*info.values())])
+					terminated = done # Only terminate when truncated
+					saver.add_transition(
+						prev_obs.numpy(),
+						action.numpy(),
+						obs.numpy(),
+						reward.numpy(),
+						terminated.numpy(),
+						[dict(zip(info,t)) for t in zip(*info.values())])
 			ep_rewards.append(ep_reward.tolist())
 			ep_successes.append(info['success'].tolist())
 			if cfg.save_video:

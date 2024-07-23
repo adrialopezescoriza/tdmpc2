@@ -10,20 +10,23 @@ class BaseTrajectorySaver(object):
         'dones',
         'infos',
     ]
-    def __init__(self, num_envs, save_dir, success_only):
+    def __init__(self, num_envs, save_dir, success_only, max_traj):
         self.num_envs = num_envs
         self.save_dir = save_dir
         self.success_only = success_only
         self.traj = [
             {key: [] for key in self.KEYS} 
         for _ in range(num_envs)]
-        self.data_to_save = []  
+        self.data_to_save = [] 
+        self.max_traj = max_traj
 
     def add_transition(self, obs, act, next_obs, rew, done, info):
         '''
             Important: All args need to be in format List[np.array()]
         '''
         for i in range(self.num_envs):
+            if self.num_traj == self.max_traj:
+                break
             self.traj[i]['observations'].append(obs[i])
             self.traj[i]['next_observations'].append(next_obs[i])
             self.traj[i]['actions'].append(act[i])

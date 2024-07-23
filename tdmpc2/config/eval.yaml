@@ -3,19 +3,19 @@ defaults:
     - _self_
 
 # environment
-task: stack-cube-semi
+task: peg-insertion-semi
 obs: state
 num_envs: 16
 
 # evaluation
-checkpoint: /home/adria/tdmpc2/ckpt/StackCube.pt
-eval_episodes: 200
+checkpoint: /home/adria/tdmpc2/ckpt/tdmpc/PegInsertionSide.pt
+eval_episodes: 100
 
 # saving
 save_trajectory: true
 success_only: true
 log_path: .
-save_video: false
+save_video: true
 
 # misc
 multitask: false
