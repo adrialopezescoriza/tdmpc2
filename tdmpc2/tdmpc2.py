@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+from tqdm import tqdm
 
 from common import math
 from common.scale import RunningScale
@@ -26,6 +27,7 @@ class TDMPC2:
 			{'params': self.model._task_emb.parameters() if self.cfg.multitask else []}
 		], lr=self.cfg.lr)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr, eps=1e-5)
+		self.bc_optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
 		self.model.eval()
 		self.scale = RunningScale(cfg)
 		self.cfg.iterations += 2*int(cfg.action_dim >= 20) # Heuristic for large action spaces
@@ -68,6 +70,27 @@ class TDMPC2:
 		"""
 		state_dict = fp if isinstance(fp, dict) else torch.load(fp)
 		self.model.load_state_dict(state_dict["model"])
+
+	def init_bc(self, buffer):
+		"""
+		Initialize policy using a behavior cloning objective (iterations: 2x #samples).
+		"""
+		pbar = tqdm(range(2 * buffer.num_eps * buffer.max_length), desc="Pretraining policy")
+		self.model.train()
+		for _ in pbar:
+			obs, action, rew, task = buffer.sample()
+			self.bc_optim.zero_grad(set_to_none=True)
+			a = self.model.pi(self.model.encode(obs[:-1], task), task)[1]
+			loss = F.mse_loss(a, action, reduce=True)
+			loss.backward()
+			torch.nn.utils.clip_grad_norm_(
+				self.model.parameters(),
+				self.cfg.grad_clip_norm,
+				error_if_nonfinite=False,
+			)
+			self.bc_optim.step()
+			pbar.set_postfix(loss=loss.item())
+		self.model.eval()
 
 	@torch.no_grad()
 	def act(self, obs, t0=False, eval_mode=False, task=None):

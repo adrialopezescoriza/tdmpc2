@@ -41,18 +41,26 @@ def train(cfg: dict):
 		$ python train.py task=dog-run steps=7000000
 	```
 	"""
+	# Config checks and processing
 	assert torch.cuda.is_available()
 	assert cfg.steps > 0, 'Must train for at least 1 step.'
+	cfg.oversample_ratio = cfg.get("oversample_ratio", 0.0)
+	cfg.use_demos = cfg.oversample_ratio > 0.0
+	assert cfg.oversample_ratio >= 0.0 and cfg.oversample_ratio <= 1.0, \
+		f"Oversampling ratio {cfg.oversample_ratio} is not between 0 and 1"
+	if cfg.get("policy_pretraining", False):
+		assert cfg.use_demos, "Can't pretrain policy if oversampling ratio is 0.0"
 	cfg = parse_cfg(cfg)
 	set_seed(cfg.seed)
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)
 
+	# Training code
 	trainer_cls = DrsTrainer
 	trainer = trainer_cls(
 		cfg=cfg,
 		env=make_env(cfg),
 		agent=TDMPC2(cfg),
-		buffer=EnsembleBuffer(cfg) if cfg.prefill_buffer_with_demos else Buffer(cfg),
+		buffer=EnsembleBuffer(cfg) if cfg.use_demos else Buffer(cfg),
 		logger=Logger(cfg),
 		video_env=make_single_env(cfg) if cfg.save_video else None,
 	)

@@ -23,6 +23,7 @@ class Buffer():
 		)
 		self._batch_size = cfg.batch_size * (cfg.horizon+1)
 		self._num_eps = 0
+		self._max_length = 0
 
 	@property
 	def capacity(self):
@@ -33,6 +34,11 @@ class Buffer():
 	def num_eps(self):
 		"""Return the number of episodes in the buffer."""
 		return self._num_eps
+	
+	@property
+	def max_length(self):
+		"""Return the maximum length of episodes in the buffer."""
+		return self._max_length
 
 	def _reserve_buffer(self, storage):
 		"""
@@ -93,6 +99,8 @@ class Buffer():
 			self._buffer = self._init(td[0])
 		for i in range(b_size):
 			self._buffer.extend(td[i])
+			if td[i].shape[0] > self._max_length:
+				self._max_length =  td[i].shape[0]
 		self._num_eps += b_size
 		return self._num_eps
 

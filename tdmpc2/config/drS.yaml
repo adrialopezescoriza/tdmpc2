@@ -20,6 +20,8 @@ buffer_size: 1_000_000
 exp_name: default
 save_freq: 500_000
 oversample_ratio: 0.5
+policy_pretraining: true
+use_demos: ???
 
 # logging
 wandb_project: tdmpc2-drS-learning
@@ -29,13 +31,12 @@ disable_wandb: false
 save_csv: false
 
 # drS
-demo_path: /home/adria/tdmpc2/demo_data/StackCube_200.pkl
+demo_path: /home/adria/tdmpc2/demo_data/TDMPC/StackCube_100.pkl
 prefill_buffer_with_demos: true
 drS_discriminator:
     disc_lr: 3e-4
     batch_size: 256
     buffer_size: 10_000_000
 
-# misc, no effect, just for logging organization purposes
-drs_input: ???
+# misc, no effect, just for logging grouping purposes
 tag: ???

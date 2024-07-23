@@ -103,6 +103,14 @@ class DrsTrainer(Trainer):
 
 	def train(self):
 		"""Train agent and discriminator"""
+
+		# Policy pretraining
+		if self.cfg.get("policy_pretraining", False):
+			print(colored("Policy pretraining", "red", attrs=["bold"]))
+			self.agent.init_bc(self.buffer._offline_buffer)
+
+		# Start interactive training
+		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
 		train_metrics, done, eval_next = {}, torch.tensor(True), True
 		while self._step <= self.cfg.steps:
 
@@ -173,7 +181,8 @@ class DrsTrainer(Trainer):
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
 					num_updates = max(1, int(self.cfg.seed_steps / self.cfg.steps_per_update))
-					print('Pretraining agent on seed data...')
+					print(colored("\nTraining TDMPC Agent", "green", attrs=["bold"]))
+					print(f'Pretraining agent with {num_updates} update steps on seed data...')
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
