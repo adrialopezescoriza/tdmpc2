@@ -39,8 +39,6 @@ class OnlineTrainer(Trainer):
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
-			if self.cfg.save_video:
-				self.logger.video.init(self.env, enabled=(i==0))
 			while not done.any():
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
