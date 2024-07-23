@@ -1,4 +1,5 @@
 from collections import defaultdict
+from tensordict.tensordict import TensorDict
 
 import gym
 import numpy as np
@@ -29,6 +30,7 @@ class TensorWrapper(gym.Wrapper):
 		if isinstance(obs, dict):
 			for k in obs.keys():
 				obs[k] = self._try_f32_tensor(obs[k])
+			obs = TensorDict(obs, batch_size=())
 		else:
 			obs = self._try_f32_tensor(obs)
 		return obs

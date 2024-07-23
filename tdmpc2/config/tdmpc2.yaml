@@ -96,3 +96,6 @@ bin_size: ???
 # environments
 maniskill:
     action_repeat: 2
+    obs_keys: ["agent", "image"]
+    camera:
+        render_size: 64

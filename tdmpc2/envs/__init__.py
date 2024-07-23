@@ -71,8 +71,8 @@ def make_env(cfg):
 				pass
 		if env is None:
 			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
-		assert cfg.num_envs == 1 or cfg.get('obs', 'state') == 'state', \
-			'Vectorized environments only support state observations.'
+		assert cfg.num_envs == 1 or cfg.get('obs', 'state') in ('state', 'rgbd'), \
+			'Vectorized environments only support rgbd observations for Maniskill.'
 		env = Vectorized(cfg, fn)
 		env = TensorWrapper(env)
 	if cfg.get('obs', 'state') == 'rgb':
