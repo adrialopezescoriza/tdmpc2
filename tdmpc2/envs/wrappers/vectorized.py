@@ -31,8 +31,9 @@ class Vectorized():
 		self.max_episode_steps = env.max_episode_steps
 
 		# DrS specific
-		self.reward_mode = env.reward_mode
-		self.n_stages = env.n_stages if hasattr(env, "n_stages") else 0
+		if hasattr(env, "n_stages"):
+			self.reward_mode = env.reward_mode
+			self.n_stages = env.n_stages
 
 	def rand_act(self):
 		return torch.rand((self.cfg.num_envs, *self.action_space.shape)) * 2 - 1
