@@ -3,7 +3,7 @@ defaults:
     - _self_
 
 # environment
-task: stack-cube-semi
+task: pick-place-semi
 obs: state
 num_envs: 16
 
@@ -31,7 +31,8 @@ disable_wandb: false
 save_csv: false
 
 # drS
-demo_path: /home/adria/tdmpc2/demo_data/TDMPC/StackCube_100.pkl
+drS_enable: false
+demo_path: /home/adria/tdmpc2/demo_data/TDMPC/PickAndPlace_100.pkl
 prefill_buffer_with_demos: true
 drS_discriminator:
     disc_lr: 3e-4

@@ -199,7 +199,7 @@ def make_env(cfg):
 		control_mode=task_cfg['control_mode'],
 		render_camera_cfgs=dict(width=384, height=384),
 		reward_mode=task_cfg.get("reward_mode", None),
-		camera_cfgs=dict(width=cfg.maniskill.get("render_size", 64), height=cfg.maniskill.get("render_size", 64)),
+		camera_cfgs=dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64)),
 	)
 	
 	# DrS Reward Wrapper
