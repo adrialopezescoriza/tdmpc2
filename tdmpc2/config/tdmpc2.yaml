@@ -70,6 +70,7 @@ wandb_entity: alopez
 wandb_silent: true
 disable_wandb: false
 save_csv: false
+save_freq: 1_000_000
 
 # drS
 drS_ckpt: ???

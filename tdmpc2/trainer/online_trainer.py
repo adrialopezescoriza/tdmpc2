@@ -84,6 +84,11 @@ class OnlineTrainer(Trainer):
 			# Evaluate agent periodically
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
+			
+			# Save agent periodically
+			if self._step % self.cfg.save_freq == 0 and self._step > 0:
+					print("Saving agent and discriminator checkpoints...")
+					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
 
 			# Reset environment
 			if done.any():
