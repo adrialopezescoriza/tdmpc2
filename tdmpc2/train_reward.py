@@ -15,7 +15,8 @@ from envs import make_env, make_single_env
 from tdmpc2 import TDMPC2
 from common.logger import Logger
 
-from drS.trainer import DrsTrainer
+from drS.drS_trainer import DrsTrainer
+from drS.modem_trainer import ModemTrainer
 from drS.ensemble_buffer import EnsembleBuffer
 
 torch.backends.cudnn.benchmark = True
@@ -55,7 +56,7 @@ def train(cfg: dict):
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)
 
 	# Training code
-	trainer_cls = DrsTrainer
+	trainer_cls = DrsTrainer if cfg.drS_enable else ModemTrainer
 	trainer = trainer_cls(
 		cfg=cfg,
 		env=make_env(cfg),
