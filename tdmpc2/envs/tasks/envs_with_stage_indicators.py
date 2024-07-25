@@ -8,11 +8,6 @@ class DrS_BaseEnv(BaseEnv):
 
     def compute_stage_indicator(self):
         raise NotImplementedError()
-
-    def _get_obs_state_dict(self) -> OrderedDict:
-        ret = super()._get_obs_state_dict()
-        ret['extra'].update(self.compute_stage_indicator())
-        return ret
     
     def get_reward(self, **kwargs):
         if self._reward_mode == "sparse":
