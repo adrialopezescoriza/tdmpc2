@@ -99,4 +99,4 @@ maniskill:
     action_repeat: 2
     obs_keys: ["agent", "image"]
     camera:
-        render_size: 64 # 64, 112, 224
+        render_size: 128 # 64, 128, 256
