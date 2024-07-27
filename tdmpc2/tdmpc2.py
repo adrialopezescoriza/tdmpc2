@@ -93,6 +93,27 @@ class TDMPC2:
 		self.model.eval()
 
 	@torch.no_grad()
+	def policy_action(self, obs, eval_mode=False, task=None):
+		"""
+		Select an action by only sampling from policy.
+		
+		Args:
+			obs (torch.Tensor): Observation from the environment.
+			t0 (bool): Whether this is the first observation in the episode.
+			eval_mode (bool): Whether to use the mean of the action distribution.
+			task (int): Task index (only used for multi-task experiments).
+		
+		Returns:
+			torch.Tensor: Action to take in the environment.
+		"""
+		obs = obs.to(self.device, non_blocking=True)
+		if task is not None:
+			task = torch.tensor([task], device=self.device)
+		z = self.model.encode(obs, task)
+		a = self.model.pi(z, task)[int(not eval_mode)]
+		return a.cpu()
+	
+	@torch.no_grad()
 	def act(self, obs, t0=False, eval_mode=False, task=None):
 		"""
 		Select an action by planning in the latent space of the world model.
@@ -113,7 +134,7 @@ class TDMPC2:
 		if self.cfg.mpc:
 			a = self.plan(z, t0=t0, eval_mode=eval_mode, task=task)
 		else:
-			a = self.model.pi(z, task)[int(not eval_mode)][0]
+			a = self.model.pi(z, task)[int(not eval_mode)]
 		return a.cpu()
 
 	@torch.no_grad()
