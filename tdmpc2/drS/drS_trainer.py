@@ -135,6 +135,7 @@ class DrsTrainer(Trainer):
 
 				if self._step > 0:
 					tds = torch.cat(self._tds)
+					self._ep_idx = self.buffer.add(tds)
 					train_metrics.update(
 						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
 						episode_max_reward=np.nanmax(tds['reward'], axis=0).max(),
@@ -142,7 +143,6 @@ class DrsTrainer(Trainer):
 					)
 					train_metrics.update(self.common_metrics())
 					self.logger.log(train_metrics, 'train')
-					self._ep_idx = self.buffer.add(tds)
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
@@ -153,6 +153,8 @@ class DrsTrainer(Trainer):
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
 				action = self.agent.act(obs, t0=len(self._tds)==1)
+			elif self.cfg.get("policy_pretraining", False):
+				action = self.agent.policy_action(obs, eval_mode=True)
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
