@@ -202,6 +202,9 @@ def make_env(cfg):
 		reward_mode=task_cfg.get("reward_mode", None),
 		camera_cfgs=dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64)),
 	)
+
+	# Seed environment
+	env.seed(cfg.seed)
 	
 	# DrS Reward Wrapper
 	if task_cfg.get("reward_mode", None) == "drS":
