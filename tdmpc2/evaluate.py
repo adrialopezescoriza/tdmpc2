@@ -94,7 +94,7 @@ def evaluate(cfg: dict):
 			obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
 			while not done.all():
 				prev_obs = obs
-				action = agent.act(obs, t0=t==0, task=task_idx)
+				action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True)
 				obs, reward, done, info = env.step(action)
 				ep_reward += reward
 				t += 1
