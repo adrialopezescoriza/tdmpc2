@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+from envs.utils import convert_observation_to_space
 from envs.wrappers.time_limit import TimeLimit
 from envs.wrappers.drS_reward import DrsRewardWrapper
 
@@ -97,27 +98,6 @@ MANISKILL_TASKS = {
 	),
 }
 
-def flatten_space(space):
-	obs_shp = []
-	for v in space.values():
-		try:
-			shp = np.prod(v.shape)
-		except:
-			shp = 1
-		obs_shp.append(shp)
-	obs_shp = (int(np.sum(obs_shp)),)
-	return gym.spaces.Box(
-		low=np.full(
-			obs_shp,
-			-np.inf,
-			dtype=np.float32),
-		high=np.full(
-			obs_shp,
-			np.inf,
-			dtype=np.float32),
-		dtype=np.float32,
-	)
-
 def select_obs(keys, obs):
 	"""
 	Processes observations on the first nested level of the obs dictionary
@@ -127,8 +107,7 @@ def select_obs(keys, obs):
 		obs: An array or dictionary of more nested observations or observation spaces 
 	"""
 	processed = dict()
-	is_space = isinstance(next(iter(obs.values())), gym.spaces.Space)
-	flatten = lambda x: flatten_space(x) if is_space else np.concatenate(list(x.values()))
+	flatten = lambda x: np.concatenate(list(x.values()))
 
 	for k in keys:
 		if k == "agent":
@@ -136,13 +115,7 @@ def select_obs(keys, obs):
 			processed["state"] = flatten(obs[k])
 		elif k == "image":
 			# Only take base camera rgb + Put channel dimension first
-			if is_space:
-				shp = obs[k]['base_camera']['rgb'].shape
-				processed["rgb"] = gym.spaces.Box(
-					low=0, high=255, shape=(shp[-1],) + shp[:-1], dtype=np.uint8
-				)
-			else:
-				processed["rgb"] = obs[k]['base_camera']['rgb'].transpose(2,0,1)
+			processed["rgb"] = obs[k]['base_camera']['rgb'].transpose(2,0,1)
 		else:
 			return NotImplementedError
 	return processed
@@ -162,7 +135,7 @@ class ManiSkillWrapper(gym.Wrapper):
 
 		if hasattr(self.env.observation_space, 'spaces'):
 			# Dict
-			self.observation_space = gym.spaces.Dict(select_obs(self.obs_keys, self.env.observation_space.spaces))
+			self.observation_space = convert_observation_to_space(select_obs(self.obs_keys, self.env.reset()))
 		else:
 			self.observation_space = self.env.observation_space
 
