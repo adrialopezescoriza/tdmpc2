@@ -155,9 +155,9 @@ class ManiSkillWrapper(gym.Wrapper):
 	@property
 	def unwrapped(self):
 		return self.env.unwrapped
-
-	def render(self, args, **kwargs):
-		return self.env.render(mode='cameras')
+	
+	def render(self, mode='cameras', **kwargs):
+		return self.env.render(mode, **kwargs)
 
 
 def make_env(cfg):
@@ -167,13 +167,14 @@ def make_env(cfg):
 	if cfg.task not in MANISKILL_TASKS:
 		raise ValueError('Unknown task:', cfg.task)
 	task_cfg = MANISKILL_TASKS[cfg.task]
+	camera_resolution = dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64))
 	env = gym.make(
 		task_cfg['env'],
 		obs_mode=cfg.obs,
 		control_mode=task_cfg['control_mode'],
-		render_camera_cfgs=dict(width=384, height=384),
 		reward_mode=task_cfg.get("reward_mode", None),
-		camera_cfgs=dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64)),
+		camera_cfgs=camera_resolution,
+		render_camera_cfgs=camera_resolution if cfg.get("render_for_obs", False) else dict(width=384, height=384),
 	)
 
 	# Seed environment

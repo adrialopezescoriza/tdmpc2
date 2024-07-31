@@ -55,10 +55,15 @@ def load_dataset_as_td(path, num_traj=None, success_only=False):
     if num_traj is not None:
         trajectories = trajectories[:num_traj]
 
+    def episode_to_tensor(episode):
+        if isinstance(episode[0], dict):
+            return torch.stack([TensorDict(o) for o in episode]).float()
+        return torch.tensor(episode).float
+
     tds = []
     for traj in trajectories:
         tds.append(TensorDict(dict(
-            obs=torch.tensor(traj['next_observations']).float() if 'next_observations' in traj.keys() else torch.tensor(traj['observations']).float(),
+            obs=episode_to_tensor(traj['next_observations' if 'next_observations' in traj.keys() else 'observations']),
             reward=torch.tensor(traj['rewards']).float(),
             action=torch.tensor(traj['actions']).float(),
         ), batch_size=(len(traj['rewards']),)))

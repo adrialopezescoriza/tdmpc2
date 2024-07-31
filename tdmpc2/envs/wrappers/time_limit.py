@@ -70,3 +70,6 @@ class TimeLimit(gym.Wrapper):
         """
         self._elapsed_steps = 0
         return self.env.reset(**kwargs)
+    
+    def render(self, *args, **kwargs):
+        return self.env.render(*args, **kwargs)

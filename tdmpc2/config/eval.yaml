@@ -20,3 +20,5 @@ save_video: true
 # misc
 multitask: false
 
+# rendering
+render_for_obs: true

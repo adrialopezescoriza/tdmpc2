@@ -139,3 +139,6 @@ dmypy.json
 
 # Datasets
 demo_data/
+
+# Other
+custom_scripts/

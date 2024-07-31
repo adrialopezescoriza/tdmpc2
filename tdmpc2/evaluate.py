@@ -61,7 +61,7 @@ def evaluate(cfg: dict):
 
 	# Make environment
 	env = make_env(cfg)
-	video_env = make_single_env(cfg) if cfg.save_video else None
+	video_env = make_single_env(cfg, video_only=True) if cfg.save_video else None
 
 	# Load agent
 	agent = TDMPC2(cfg)
@@ -109,9 +109,6 @@ def evaluate(cfg: dict):
 						[dict(zip(info,t)) for t in zip(*info.values())])
 			ep_rewards.append(ep_reward.tolist())
 			ep_successes.append(info['success'].tolist())
-			if cfg.save_video:
-				imageio.mimsave(
-					os.path.join(video_dir, f'{task}-{len(ep_rewards)}.mp4'), frames, fps=15)
 		if cfg.save_trajectory:
 			saver.save(env_id=task)
 	
