@@ -155,9 +155,9 @@ class ManiSkillWrapper(gym.Wrapper):
 	@property
 	def unwrapped(self):
 		return self.env.unwrapped
-
-	def render(self, args, **kwargs):
-		return self.env.render(mode='cameras')
+	
+	def render(self, mode='cameras', **kwargs):
+		return self.env.render(mode, **kwargs)
 
 
 def make_env(cfg):

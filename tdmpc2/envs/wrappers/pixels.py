@@ -36,3 +36,6 @@ class PixelWrapper(gym.Wrapper):
 	def step(self, action):
 		_, reward, done, info = self.env.step(action)
 		return self._get_obs(), reward, done, info
+	
+	def render(self, *args, **kwargs):
+		return self.env.render(*args, **kwargs)

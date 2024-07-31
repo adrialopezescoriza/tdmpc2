@@ -41,6 +41,9 @@ class TensorWrapper(gym.Wrapper):
 		else:
 			obs = self.env.reset()
 		return self._obs_to_tensor(obs)
+	
+	def render(self, *args, **kwargs):
+		return self.env.render(*args, **kwargs)
 
 	def step(self, action, **kwargs):
 		if self._wrapped_vectorized:
