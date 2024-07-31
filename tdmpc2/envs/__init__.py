@@ -87,7 +87,7 @@ def make_env(cfg):
 	return env
 
 ## TODO: Mostly repeated code from above function
-def make_single_env(cfg):
+def make_single_env(cfg, video_only=False):
 	"""
 	Make a single environment for TD-MPC2 experiments.
 	"""
@@ -108,5 +108,12 @@ def make_single_env(cfg):
 		env = TensorWrapper(env)
 	if cfg.get('obs', 'state') == 'rgb':
 		env = PixelWrapper(cfg, env)
-
+	if not video_only:
+		try: # Dict
+			cfg.obs_shape = {k: v.shape for k, v in env.observation_space.spaces.items()}
+		except: # Box
+			cfg.obs_shape = {cfg.get('obs', 'state'): env.observation_space.shape}
+		cfg.action_dim = env.action_space.shape[0]
+		cfg.episode_length = env.max_episode_steps
+		cfg.seed_steps = max(1000, 5*cfg.episode_length)
 	return env

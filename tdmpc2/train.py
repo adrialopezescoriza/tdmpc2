@@ -53,7 +53,7 @@ def train(cfg: dict):
 		agent=TDMPC2(cfg),
 		buffer=Buffer(cfg),
 		logger=Logger(cfg),
-		video_env=make_single_env(cfg) if cfg.save_video else None,
+		video_env=make_single_env(cfg, video_only=True) if cfg.save_video else None,
 	)
 	trainer.train()
 	print('\nTraining completed successfully')
