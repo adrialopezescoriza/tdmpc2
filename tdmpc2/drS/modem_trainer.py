@@ -4,12 +4,8 @@ import numpy as np
 import torch
 from termcolor import colored
 from tensordict.tensordict import TensorDict
-from functools import partial
 
-from .discriminator import Discriminator
-from .disc_buffer import DiscriminatorBuffer
 from trainer.base import Trainer
-
 
 class ModemTrainer(Trainer):
 	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
@@ -101,7 +97,7 @@ class ModemTrainer(Trainer):
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
-			# Save DrS and Agent periodically
+			# Save agent periodically
 			if self._step % self.cfg.save_freq == 0 and self._step > 0:
 					print("Saving agent checkpoint...")
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
@@ -128,7 +124,6 @@ class ModemTrainer(Trainer):
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
-				self._observations = torch.empty((self.cfg.num_envs,0) + self.env.observation_space.shape)
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
@@ -139,7 +134,6 @@ class ModemTrainer(Trainer):
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward))
-			self._observations = torch.cat((self._observations, obs.unsqueeze(1)), dim=1)
 			
 			# Update agent
 			if self._step >= self.cfg.seed_steps:
