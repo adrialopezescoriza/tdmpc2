@@ -19,7 +19,7 @@ class DrsTrainer(Trainer):
 
 		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
 
-		# DrS specific
+		# DrS specific (TODO: Need to combine disc buffers with RL replay buffer to reduce mem consumption)
 		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
 		self.stage_buffers = [DiscriminatorBuffer(
 			self.cfg.drS_discriminator.buffer_size,
@@ -146,7 +146,7 @@ class DrsTrainer(Trainer):
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
-				self._observations = torch.empty((self.cfg.num_envs,0) + self.env.observation_space.shape)
+				self._observations = None
 				best_step = [0 for _ in range(self.cfg.num_envs)]
 				best_reward = [-np.inf for _ in range(self.cfg.num_envs)]
 
@@ -159,7 +159,7 @@ class DrsTrainer(Trainer):
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward))
-			self._observations = torch.cat((self._observations, obs.unsqueeze(1)), dim=1)
+			self._observations = obs.unsqueeze(1) if self._observations is None else torch.cat((self._observations, obs.unsqueeze(1)), dim=1)
 
 			# Get longest possible trajectory (DrS)
 			for i, r in enumerate(reward):

@@ -8,6 +8,7 @@ import imageio
 import numpy as np
 import torch
 from termcolor import colored
+from tqdm import tqdm
 
 from common.parser import parse_cfg
 from common.seed import set_seed
@@ -86,29 +87,34 @@ def evaluate(cfg: dict):
 		if not cfg.multitask:
 			task_idx = None
 		ep_rewards, ep_successes = [], []
-		while (saver.num_traj if cfg.save_trajectory else len(ep_rewards)) < cfg.eval_episodes:
-			if cfg.save_video:
-				frames = make_video(video_env, agent, task_idx)
-				imageio.mimsave(
-					os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
-			obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
-			while not done.all():
-				prev_obs = obs
-				action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True)
-				obs, reward, done, info = env.step(action)
-				ep_reward += reward
-				t += 1
-				if cfg.save_trajectory:
-					terminated = done # Only terminate when truncated
-					saver.add_transition(
-						prev_obs.numpy(),
-						action.numpy(),
-						obs.numpy(),
-						reward.numpy(),
-						terminated.numpy(),
-						[dict(zip(info,t)) for t in zip(*info.values())])
-			ep_rewards.append(ep_reward.tolist())
-			ep_successes.append(info['success'].tolist())
+		with tqdm(total=cfg.eval_episodes) as pbar:
+			while (saver.num_traj if cfg.save_trajectory else len(ep_rewards)) < cfg.eval_episodes:
+				if cfg.save_video:
+					frames = make_video(video_env, agent, task_idx)
+					imageio.mimsave(
+						os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
+				obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
+				while not done.all():
+					prev_obs = obs
+					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True)
+					obs, reward, done, info = env.step(action)
+					ep_reward += reward
+					t += 1
+					if cfg.save_trajectory:
+						terminated = done # Only terminate when truncated
+						saver.add_transition(
+							prev_obs.numpy(),
+							action.numpy(),
+							obs.numpy(),
+							reward.numpy(),
+							terminated.numpy(),
+							[dict(zip(info,t)) for t in zip(*info.values())])
+				ep_rewards.append(ep_reward.tolist())
+				ep_successes.append(info['success'].tolist())
+				
+				# Update the progress bar
+				pbar.update((saver.num_traj if cfg.save_trajectory else len(ep_rewards)) - pbar.n)
+		pbar.close()
 		if cfg.save_trajectory:
 			saver.save(env_id=task)
 	

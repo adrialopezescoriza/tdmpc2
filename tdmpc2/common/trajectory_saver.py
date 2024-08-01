@@ -36,7 +36,6 @@ class BaseTrajectorySaver(object):
             if done[i]:
                 if not self.success_only or info[i]['success']:
                     self.data_to_save.append(self.traj[i])
-                    print(f"Trajectory number {self.num_traj} saved")
                 self.traj[i] = {key: [] for key in self.KEYS}
     
     def add_state(self, s):

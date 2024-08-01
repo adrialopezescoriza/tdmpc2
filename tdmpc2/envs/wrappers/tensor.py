@@ -26,11 +26,11 @@ class TensorWrapper(gym.Wrapper):
 			x = x.float()
 		return x
 
-	def _obs_to_tensor(self, obs):
+	def _obs_to_tensor(self, obs, bs=()):
 		if isinstance(obs, dict):
 			for k in obs.keys():
 				obs[k] = self._try_f32_tensor(obs[k])
-			obs = TensorDict(obs, batch_size=())
+			obs = TensorDict(obs, batch_size=bs)
 		else:
 			obs = self._try_f32_tensor(obs)
 		return obs
@@ -38,9 +38,9 @@ class TensorWrapper(gym.Wrapper):
 	def reset(self, task_idx=None, **kwargs):
 		if self._wrapped_vectorized:
 			obs = self.env.reset(**kwargs)
-		else:
-			obs = self.env.reset()
-		return self._obs_to_tensor(obs)
+			return self._obs_to_tensor(obs, self.cfg.num_envs)
+
+		return self._obs_to_tensor(self.env.reset())
 	
 	def render(self, *args, **kwargs):
 		return self.env.render(*args, **kwargs)
@@ -48,8 +48,10 @@ class TensorWrapper(gym.Wrapper):
 	def step(self, action, **kwargs):
 		if self._wrapped_vectorized:
 			obs, reward, done, info = self.env.step(action.numpy(), **kwargs)
+			obs = self._obs_to_tensor(obs, self.cfg.num_envs)
 		else:
 			obs, reward, done, info = self.env.step(action.numpy())
+			obs = self._obs_to_tensor(obs)
 		if isinstance(info, tuple):
 			info = {key: torch.stack([torch.tensor(d[key]) for d in info]) for key in info[0].keys()}
 			if 'success' not in info.keys():
@@ -57,4 +59,4 @@ class TensorWrapper(gym.Wrapper):
 		else:
 			info = defaultdict(float, info)
 			info['success'] = float(info['success'])
-		return self._obs_to_tensor(obs), torch.tensor(reward, dtype=torch.float32), torch.tensor(done), info
+		return obs, torch.tensor(reward, dtype=torch.float32), torch.tensor(done), info

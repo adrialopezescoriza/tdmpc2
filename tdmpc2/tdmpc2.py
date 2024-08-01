@@ -73,9 +73,9 @@ class TDMPC2:
 
 	def init_bc(self, buffer):
 		"""
-		Initialize policy using a behavior cloning objective (iterations: 2x #samples).
+		Initialize policy using a behavior cloning objective (iterations: 6x #samples).
 		"""
-		pbar = tqdm(range(2 * buffer.num_eps * buffer.max_length), desc="Pretraining policy")
+		pbar = tqdm(range(6 * buffer.num_eps * buffer.max_length), desc="Pretraining policy")
 		self.model.train()
 		for _ in pbar:
 			obs, action, rew, task = buffer.sample()

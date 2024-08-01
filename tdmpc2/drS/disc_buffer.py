@@ -1,11 +1,16 @@
 import torch
 import numpy as np
+from tensordict.tensordict import TensorDict
 
 class DiscriminatorBuffer(object):
     # can be optimized by create a buffer of size (n_traj, len_traj, dim)
     def __init__(self, buffer_size, obs_space, action_space, device):
         self.buffer_size = buffer_size
-        self.next_observations = np.zeros((self.buffer_size,) + obs_space.shape, dtype=obs_space.dtype)
+        if hasattr(obs_space, "spaces"):
+            self.next_observations = TensorDict({k : torch.zeros((self.buffer_size,) + v.shape) 
+                                                 for k, v in obs_space.spaces.items()}, batch_size=(self.buffer_size,)).float()
+        else:
+            self.next_observations = torch.zeros((self.buffer_size,) + obs_space.shape).float()
         self.device = device
         self.pos = 0
         self.full = False
@@ -17,11 +22,9 @@ class DiscriminatorBuffer(object):
     def add(self, next_obs):
         '''
             Adds an element into the existing circular buffer
-            next_obs: np.ndarray or torch.Tensor
+            next_obs: torch.Tensor or tensordict.TensorDict
         '''
         l = next_obs.shape[0]
-
-        assert isinstance(next_obs, np.ndarray) or isinstance (next_obs, torch.Tensor), "Input element is not np.array or torch.Tensor!"
         
         while self.pos + l >= self.buffer_size:
             self.full = True
@@ -33,11 +36,11 @@ class DiscriminatorBuffer(object):
             
         self.next_observations[self.pos:self.pos+l] = next_obs.copy() if isinstance(next_obs, np.ndarray) else next_obs.clone()
         self.pos = (self.pos + l) % self.buffer_size
-        self.next_observations = np.float32(self.next_observations)
+        self.next_observations = self.next_observations.float()
 
     def sample(self, batch_size):
         idxs = np.random.randint(0, self.size, size=batch_size)
         batch = dict(
             next_observations=self.next_observations[idxs],
         )
-        return {k: torch.tensor(v).to(self.device) for k,v in batch.items()}
+        return {k: v.to(self.device) for k,v in batch.items()}
