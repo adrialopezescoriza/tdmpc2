@@ -7,9 +7,10 @@ class DiscriminatorBuffer(object):
     def __init__(self, buffer_size, obs_space, action_space, device):
         self.buffer_size = buffer_size
         if hasattr(obs_space, "spaces"):
-            self.next_observations = TensorDict({k : torch.zeros((self.buffer_size,) + v.shape) for k, v in obs_space.spaces.items()}, batch_size=(self.buffer_size,))
+            self.next_observations = TensorDict({k : torch.zeros((self.buffer_size,) + v.shape) 
+                                                 for k, v in obs_space.spaces.items()}, batch_size=(self.buffer_size,)).float()
         else:
-            self.next_observations = torch.zeros((self.buffer_size,) + obs_space.shape, dtype=obs_space.dtype)
+            self.next_observations = torch.zeros((self.buffer_size,) + obs_space.shape).float()
         self.device = device
         self.pos = 0
         self.full = False
