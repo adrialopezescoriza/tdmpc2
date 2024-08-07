@@ -7,7 +7,7 @@ from tensordict.tensordict import TensorDict
 from functools import partial
 
 from .discriminator import Discriminator
-from .disc_buffer import DiscriminatorBuffer
+from .drS_buffer import DrSBuffer
 from trainer.base import Trainer
 
 
@@ -18,24 +18,13 @@ class DrsTrainer(Trainer):
 		super().__init__(*args, **kwargs)
 
 		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
-
-		# DrS specific (TODO: Need to combine disc buffers with RL replay buffer to reduce mem consumption)
-		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
-		self.stage_buffers = [DiscriminatorBuffer(
-			self.cfg.drS_discriminator.buffer_size,
-			self.env.observation_space,
-			self.env.action_space,
-			self.agent.device,
-		) for _ in range(self.env.n_stages + 1)]
+		assert isinstance(self.buffer, DrSBuffer), "DrS Trainer is only compatible with this DrS Buffer"
 
 		self._step = 0
 		self._ep_idx = 0
 		self._start_time = time()
 
-		if self.cfg.demo_path:
-			from .data_utils import load_demo_dataset, load_dataset_as_td
-			demo_dataset = load_dataset_as_td(self.cfg.demo_path)
-			self.stage_buffers[-1].add(next_obs=torch.cat(demo_dataset)['obs'])
+		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
 		
 		print('Agent Architecture:', self.agent.model)
 		print('Discriminator Architecture:', self.disc)
@@ -107,7 +96,7 @@ class DrsTrainer(Trainer):
 		# Policy pretraining
 		if self.cfg.get("policy_pretraining", False):
 			print(colored("Policy pretraining", "red", attrs=["bold"]))
-			self.agent.init_bc(self.buffer._offline_buffer)
+			self.agent.init_bc(self.buffer.stage_buffers[-1])
 
 		# Start interactive training
 		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
@@ -146,9 +135,6 @@ class DrsTrainer(Trainer):
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs)]
-				self._observations = None
-				best_step = [0 for _ in range(self.cfg.num_envs)]
-				best_reward = [-np.inf for _ in range(self.cfg.num_envs)]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
@@ -159,25 +145,6 @@ class DrsTrainer(Trainer):
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward))
-			self._observations = obs.unsqueeze(1) if self._observations is None else torch.cat((self._observations, obs.unsqueeze(1)), dim=1)
-
-			# Get longest possible trajectory (DrS)
-			for i, r in enumerate(reward):
-				if r >= best_reward[i]:
-					best_reward[i] = r
-					best_step[i] = len(self._tds) - 1
-
-			# Add experiences to corresponding disc buffer (DrS)
-			if done.any():
-				assert done.all(), 'Vectorized environments must reset all environments at once.'
-				for i in range(self.cfg.num_envs):
-					if info["success"][i]:
-						stage_idx = self.env.n_stages
-					elif self.env.n_stages > 1:
-						stage_idx = int(best_reward[i])
-					else:
-						stage_idx = 0
-					self.stage_buffers[stage_idx].add(self._observations[i, :best_step[i]])
 			
 			# Update discriminator and agent
 			if self._step >= self.cfg.seed_steps:
@@ -188,7 +155,7 @@ class DrsTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
-					disc_train_metrics = self.disc.update(self.stage_buffers,
+					disc_train_metrics = self.disc.update(self.buffer,
 										   encoder_function=partial(self.agent.model.encode, task=None))
 					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward)
 				train_metrics.update(disc_train_metrics)
