@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from tqdm import tqdm
 
 from common import math
 from common.scale import RunningScale
@@ -73,24 +72,25 @@ class TDMPC2:
 
 	def init_bc(self, buffer):
 		"""
-		Initialize policy using a behavior cloning objective (iterations: 6x #samples).
+		Initialize policy using a behavior cloning objective.
 		"""
-		pbar = tqdm(range(6 * buffer.num_eps * buffer.max_length), desc="Pretraining policy")
-		self.model.train()
-		for _ in pbar:
-			obs, action, rew, task = buffer.sample()
-			self.bc_optim.zero_grad(set_to_none=True)
-			a = self.model.pi(self.model.encode(obs[:-1], task), task)[1]
-			loss = F.mse_loss(a, action, reduce=True)
-			loss.backward()
-			torch.nn.utils.clip_grad_norm_(
-				self.model.parameters(),
-				self.cfg.grad_clip_norm,
-				error_if_nonfinite=False,
-			)
-			self.bc_optim.step()
-			pbar.set_postfix(loss=loss.item())
-		self.model.eval()
+		obs, action, rew, task = buffer.sample(return_td=False)
+		self.bc_optim.zero_grad(set_to_none=True)
+		a = self.model.pi(self.model.encode(obs[:-1], task), task)[0]
+		loss = F.mse_loss(a, action, reduce=True)
+		loss.backward()	
+
+		torch.nn.utils.clip_grad_norm_(
+			self.model.parameters(),
+			self.cfg.grad_clip_norm,
+			error_if_nonfinite=False,
+		)
+		self.bc_optim.step()
+
+		metrics = {
+			"bc_loss": loss.item()
+		}
+		return metrics
 
 	@torch.no_grad()
 	def policy_action(self, obs, eval_mode=False, task=None):

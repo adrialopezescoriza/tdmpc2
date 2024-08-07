@@ -14,10 +14,12 @@ from common.buffer import Buffer
 from envs import make_env, make_single_env
 from tdmpc2 import TDMPC2
 from common.logger import Logger
-
+from trainer.offline_trainer import OfflineTrainer
+from trainer.online_trainer import OnlineTrainer
 from drS.drS_trainer import DrsTrainer
 from drS.modem_trainer import ModemTrainer
 from drS.ensemble_buffer import EnsembleBuffer
+from drS.drS_buffer import DrSBuffer
 
 torch.backends.cudnn.benchmark = True
 
@@ -55,13 +57,28 @@ def train(cfg: dict):
 	set_seed(cfg.seed)
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)
 
+	# Initiallize elements
+	env_ = make_env(cfg)
+	if cfg.drS_enable:
+		# DrS
+		trainer_cls = DrsTrainer
+		cfg.n_stages = env_.n_stages
+		buffer_ = DrSBuffer(cfg)
+	elif cfg.use_demos:
+		# MoDem
+		trainer_cls = ModemTrainer
+		buffer_ = EnsembleBuffer(cfg)
+	else:
+		# TDMPC
+		trainer_cls = OfflineTrainer if cfg.multitask else OnlineTrainer
+		buffer_ = Buffer(cfg)
+
 	# Training code
-	trainer_cls = DrsTrainer if cfg.drS_enable else ModemTrainer
 	trainer = trainer_cls(
 		cfg=cfg,
-		env=make_env(cfg),
+		env=env_,
 		agent=TDMPC2(cfg),
-		buffer=EnsembleBuffer(cfg) if cfg.use_demos else Buffer(cfg),
+		buffer=buffer_,
 		logger=Logger(cfg),
 		video_env=make_single_env(cfg, video_only=True) if cfg.save_video else None,
 	)

@@ -47,15 +47,15 @@ class Discriminator(nn.Module):
         net = self.nets[stage_idx]
         return net(next_s)
 
-    def update(self, stage_buffers, encoder_function=None):
+    def update(self, buffer, encoder_function=None):
         disc_losses = []
         for stage_idx in range(self.n_stages):
-            success_data = sample_from_multi_buffers(stage_buffers[stage_idx+1:], self._cfg.batch_size)
-            if not success_data:
+            success_data = buffer.sample_for_disc(list(range(stage_idx+1,self.n_stages+1)), self._cfg.batch_size)
+            if success_data is None:
                 break
-            fail_data = sample_from_multi_buffers(stage_buffers[:stage_idx+1], self._cfg.batch_size)
+            fail_data = buffer.sample_for_disc(list(range(stage_idx+1)), self._cfg.batch_size)
 
-            disc_next_obs = torch.cat([fail_data['next_observations'], success_data['next_observations']], dim=0)
+            disc_next_obs = torch.cat([fail_data, success_data], dim=0)
             disc_labels = torch.cat([
                 torch.zeros((self._cfg.batch_size, 1), device=self.device), # fail label is 0
                 torch.ones((self._cfg.batch_size, 1), device=self.device), # success label is 1

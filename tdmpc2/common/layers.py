@@ -134,18 +134,19 @@ def mlp(in_dim, mlp_dims, out_dim, act=None, dropout=0.):
 def conv(in_shape, num_channels, latent_dim, act=None):
 	"""
 	Basic convolutional encoder for TD-MPC2 with raw image observations.
-	4 layers of convolution with ReLU activations, followed by a linear layer.
+	5 layers of convolution with ReLU activations, followed by a linear layer.
 	"""
 	layers = [
 		ShiftAug(), PixelPreprocess(),
 		nn.Conv2d(in_shape[0], num_channels, 7, stride=2), nn.ReLU(inplace=True),
 		nn.Conv2d(num_channels, num_channels, 5, stride=2), nn.ReLU(inplace=True),
 		nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True),
+		nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True),
 		nn.Conv2d(num_channels, num_channels, 3, stride=1), nn.Flatten()]
-	if act:
-		layers.append(act)
 	out_shape = _get_out_shape((in_shape), layers)
 	layers.extend([nn.Linear(np.prod(out_shape), latent_dim)])
+	if act:
+		layers.append(act)
 	return nn.Sequential(*layers)
 
 

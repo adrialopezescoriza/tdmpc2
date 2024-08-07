@@ -3,12 +3,12 @@ defaults:
     - _self_
 
 # environment
-task: peg-insertion-semi
+task: pick-place-semi
 obs: state
 num_envs: 16
 
 # evaluation
-checkpoint: /home/adria/tdmpc2/ckpt/tdmpc/PegInsertionSide.pt
+checkpoint: /home/adria/tdmpc2/ckpt/tdmpc/PickCube.pt
 eval_episodes: 100
 
 # saving
@@ -21,4 +21,4 @@ save_video: true
 multitask: false
 
 # rendering
-render_for_obs: true
+render_for_obs: false
