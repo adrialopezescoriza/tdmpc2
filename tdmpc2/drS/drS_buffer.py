@@ -74,7 +74,23 @@ class DrSBuffer():
 		storage_device = 'cuda' if 2.5*self._total_bytes < mem_free else 'cpu'
 		print(f'Using {storage_device.upper()} memory for storage.')
 
+	def _to_device(self, *args, device=None):
+		if device is None:
+			device = self._device
+		return (arg.to(device, non_blocking=True) \
+			if arg is not None else None for arg in args)
 	
+	def _prepare_batch(self, td):
+		"""
+		Prepare a sampled batch for training (post-processing).
+		Expects `td` to be a TensorDict with batch size TxB.
+		"""
+		obs = td['obs']
+		action = td['action'][1:]
+		reward = td['reward'][1:].unsqueeze(-1)
+		task = td['task'][0] if 'task' in td.keys() else None
+		return self._to_device(obs, action, reward, task)
+
 	def add(self, tds):
 		"""
 		Add batch of trajectories to replay buffers
@@ -100,25 +116,24 @@ class DrSBuffer():
 		"""Sample a batch of subsequences from all buffers. Oversample success data."""
 		
 		# Sample from success buffer
-		obs, action, reward, task = self._stage_buffers[-1].sample()
+		tds = [self._stage_buffers[-1].sample()]
 		idx = 0
 
 		# Loop buffers until we have all the samples
-		while reward.shape[1] < self.batch_size:
+		while len(tds) < self.batch_size:
 			stage_buffer = self._stage_buffers[idx]
 
 			# Only sample if buffer has enough data
 			if stage_buffer.cfg.batch_size <= stage_buffer.n_elements:
-				obs_, action_, reward_, task_ = stage_buffer.sample()
-				obs, action, reward, task = torch.cat([obs, obs_], dim=1), \
-											torch.cat([action, action_], dim=1), \
-											torch.cat([reward, reward_], dim=1), \
-											torch.cat([task, task_], dim=0) if task and task_ else None
+				td = stage_buffer.sample()
+				tds.append(td)
 			# Skip success buffer
 			idx = (idx + 1) % self.n_stages
 
-		# Return only batch
-		return obs[:, :self.batch_size], action[:, :self.batch_size], reward[:, :self.batch_size], task[:, :self.batch_size] if task else None
+		# TODO: 'task' needs to be cat at dim=0
+		# Cut at batch size
+		tds = torch.cat(tds[:self.batch_size], dim=1)
+		return self._prepare_batch(tds)
 
 	def sample_for_disc(self, stage_indices, batch_size : int):
 		"""Sample same batch size from each buffer and flatten T dimension"""
@@ -147,7 +162,7 @@ class DrSBuffer():
 			counter = (counter + 1) % len(stage_indices)
 
 		# Cut to fit batch_size
-		tds = torch.cat(tds, dim=0)[:batch_size]
-		return tds
+		obs,_,_,_ = self._prepare_batch(torch.cat(tds, dim=0)[:batch_size])
+		return obs
 
 

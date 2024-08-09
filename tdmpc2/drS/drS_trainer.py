@@ -3,6 +3,7 @@ from time import time
 import numpy as np
 import torch
 from termcolor import colored
+from tqdm import tqdm
 from tensordict.tensordict import TensorDict
 from functools import partial
 
@@ -38,23 +39,27 @@ class DrsTrainer(Trainer):
 			total_time=time() - self._start_time,
 		)
 	
-	def record_video_episode(self):
+	def record_video_episode(self, step, pretrain=False):
 		obs, done, t = self.video_env.reset(), False, 0
 		self.logger.video.init(self.video_env, enabled=True)
 		while not done:
-			action = self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
+			action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
 			obs, _, done, _ = self.video_env.step(action.squeeze(0))
 			t += 1
 			self.logger.video.record(self.video_env)
-		self.logger.video.save(self._step)
 
-	def eval(self):
+		if pretrain:
+			self.logger.video.save(step, "videos/pretrain_video")
+		else:
+			self.logger.video.save(step)
+
+	def eval(self, pretrain=False):
 		"""Evaluate agent."""
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			while not done.any():
-				action = self.agent.act(obs, t0=t==0, eval_mode=True)
+				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
@@ -62,10 +67,6 @@ class DrsTrainer(Trainer):
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
-
-		# Video Episode (single env), no metrics logging
-		if self.cfg.save_video:
-			self.record_video_episode()
 			
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
@@ -89,14 +90,39 @@ class DrsTrainer(Trainer):
 			reward=reward.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
 		return td
+	
+	def pretrain(self):
+		"""Pretrains agent policy with demonstration data"""
+		demo_buffer = self.buffer.stage_buffers[-1]
+		n_iterations = int(demo_buffer.num_eps * demo_buffer.max_length // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		start_time = time()
+
+		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
+
+		self.agent.model.train()
+		for iter in range (n_iterations):
+			metrics = self.agent.init_bc(demo_buffer)
+
+			if iter % self.cfg.pretrain.eval_freq == 0:
+				eval_metrics = self.eval(pretrain=True)
+				eval_metrics.update({"iteration": iter})
+				self.logger.log(eval_metrics, category="pretrain")
+
+				if self.cfg.save_video:
+						self.record_video_episode(iter, pretrain=True)
+			
+			if iter % self.cfg.pretrain.log_freq == 0:
+				metrics.update({"iteration": iter, "total_time": time() -  start_time})
+				self.logger.log(metrics, category="pretrain")
+		
+		self.agent.model.eval()
 
 	def train(self):
 		"""Train agent and discriminator"""
 
 		# Policy pretraining
 		if self.cfg.get("policy_pretraining", False):
-			print(colored("Policy pretraining", "red", attrs=["bold"]))
-			self.agent.init_bc(self.buffer.stage_buffers[-1])
+			self.pretrain()
 
 		# Start interactive training
 		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
@@ -121,6 +147,10 @@ class DrsTrainer(Trainer):
 					eval_metrics.update(self.common_metrics())
 					self.logger.log(eval_metrics, 'eval')
 					eval_next = False
+
+					# Video Episode (single env), no metrics logging
+					if self.cfg.save_video:
+						self.record_video_episode(self._step)
 
 				if self._step > 0:
 					tds = torch.cat(self._tds)

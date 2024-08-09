@@ -13,10 +13,11 @@ CONSOLE_FORMAT = [
 	("iteration", "I", "int"),
 	("episode", "E", "int"),
 	("step", "I", "int"),
-	("episode_reward", "R", "float"),
-	("episode_max_reward", "MAX_R", "float"),
-	("episode_success", "S", "float"),
+	("episode_reward", "R", "float1"),
+	("episode_max_reward", "MAX_R", "float1"),
+	("episode_success", "S", "float1"),
 	("total_time", "T", "time"),
+	("bc_loss", "BC_L", "float3")
 ]
 
 CAT_TO_COLOR = {
@@ -175,8 +176,12 @@ class Logger:
 	def _format(self, key, value, ty):
 		if ty == "int":
 			return f'{colored(key+":", "blue")} {int(value):,}'
-		elif ty == "float":
+		elif ty == "float1":
 			return f'{colored(key+":", "blue")} {value:.01f}'
+		elif ty == "float2":
+			return f'{colored(key+":", "blue")} {value:.02f}'
+		elif ty == "float3":
+			return f'{colored(key+":", "blue")} {value:.03f}'
 		elif ty == "time":
 			value = str(datetime.timedelta(seconds=int(value)))
 			return f'{colored(key+":", "blue")} {value}'

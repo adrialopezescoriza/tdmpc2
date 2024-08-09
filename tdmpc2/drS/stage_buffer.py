@@ -15,7 +15,7 @@ class StageBuffer():
 		self._device = torch.device('cuda')
 		self._capacity = min(cfg.buffer_size, cfg.steps)
 		self._sampler = SliceSampler(
-			slice_len=(self.cfg.horizon+1),
+			num_slices=cfg.batch_size,
 			end_key=None,
 			traj_key='episode',
 			truncated_key=None,
@@ -45,6 +45,10 @@ class StageBuffer():
 	def max_length(self):
 		"""Return the maximum length of episodes in the buffer."""
 		return self._max_length
+	
+	@property
+	def batch_size(self):
+		return self._batch_size
 
 	def _reserve_buffer(self, storage):
 		"""
@@ -110,9 +114,9 @@ class StageBuffer():
 	def sample(self):
 		"""Sample a batch of subsequences from the buffer."""
 		td = self._buffer.sample().view(-1, self.cfg.horizon+1).permute(1, 0)
-		return self._prepare_batch(td)
+		return td
 	
-	def sample_single(self, batch_size = None):
-		td = self._buffer.sample(self.cfg.batch_size) if batch_size is None \
-			else self._buffer.sample(self.cfg.batch_size)[:batch_size]
-		return td.to(self._device)
+	def sample_single(self, batch_size = None, return_td = True):
+		td = self._buffer.sample(self._batch_size) if batch_size is None \
+			else self._buffer.sample(self._batch_size)[:batch_size]
+		return td if return_td else self._prepare_batch(td)

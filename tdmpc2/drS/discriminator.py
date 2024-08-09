@@ -55,7 +55,7 @@ class Discriminator(nn.Module):
                 break
             fail_data = buffer.sample_for_disc(list(range(stage_idx+1)), self._cfg.batch_size)
 
-            disc_next_obs = torch.cat([fail_data['obs'], success_data['obs']], dim=0)
+            disc_next_obs = torch.cat([fail_data, success_data], dim=0)
             disc_labels = torch.cat([
                 torch.zeros((self._cfg.batch_size, 1), device=self.device), # fail label is 0
                 torch.ones((self._cfg.batch_size, 1), device=self.device), # success label is 1
