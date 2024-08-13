@@ -29,15 +29,19 @@ class ModemTrainer(Trainer):
 			total_time=time() - self._start_time,
 		)
 	
-	def record_video_episode(self):
+	def record_video_episode(self, step, pretrain=False):
 		obs, done, t = self.video_env.reset(), False, 0
 		self.logger.video.init(self.video_env, enabled=True)
 		while not done:
-			action = self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
+			action = self.agent.policy_action(obs.unsqueeze(0), eval_mode=True) if pretrain else self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
 			obs, _, done, _ = self.video_env.step(action.squeeze(0))
 			t += 1
 			self.logger.video.record(self.video_env)
-		self.logger.video.save(self._step)
+
+		if pretrain:
+			self.logger.video.save(step, "videos/pretrain_video")
+		else:
+			self.logger.video.save(step)
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
