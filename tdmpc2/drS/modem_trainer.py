@@ -60,7 +60,7 @@ class ModemTrainer(Trainer):
 
 		# Video Episode (single env), no metrics logging
 		if self.cfg.save_video:
-			self.record_video_episode()
+			self.record_video_episode(self._step)
 			
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
