@@ -25,8 +25,11 @@ class EnsembleBuffer(Buffer):
 			self._offline_buffer.add(_td.unsqueeze(1))
 		print(colored(f"Filled demo buffer with {self._offline_buffer.num_eps} trajectories", "green"))
 
-	def sample(self):
+	def sample(self, return_td=False):
 		"""Sample a batch of subsequences from the two buffers."""
+		if return_td:
+			raise NotImplementedError(f"TensorDict return not implemented for EnsembleBuffer")
+
 		obs0, action0, reward0, task0 = self._offline_buffer.sample()
 		obs1, action1, reward1, task1 = super().sample()
 		return torch.cat([obs0, obs1], dim=1), \

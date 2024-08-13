@@ -1,4 +1,5 @@
 from time import time
+from copy import deepcopy
 
 import numpy as np
 import torch
@@ -38,13 +39,13 @@ class ModemTrainer(Trainer):
 			self.logger.video.record(self.video_env)
 		self.logger.video.save(self._step)
 
-	def eval(self):
+	def eval(self, pretrain=False):
 		"""Evaluate agent."""
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			while not done.any():
-				action = self.agent.act(obs, t0=t==0, eval_mode=True)
+				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
@@ -79,14 +80,44 @@ class ModemTrainer(Trainer):
 			reward=reward.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
 		return td
+	
+	def pretrain(self):
+		"""Pretrains agent policy with demonstration data"""
+		demo_buffer = self.buffer._offline_buffer
+		n_iterations = int(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		start_time = time()
+		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
+
+		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
+
+		self.agent.model.train()
+		for iter in range (n_iterations):
+			metrics = self.agent.init_bc(demo_buffer)
+
+			if iter % self.cfg.pretrain.eval_freq == 0:
+				eval_metrics = self.eval(pretrain=True)
+				eval_metrics.update({"iteration": iter})
+				self.logger.log(eval_metrics, category="pretrain")
+
+				if eval_metrics["episode_reward"] > best_score:
+					best_model = deepcopy(self.agent.model.state_dict())
+					best_score = eval_metrics["episode_reward"]
+
+				if self.cfg.save_video:
+						self.record_video_episode(iter, pretrain=True)
+			
+			if iter % self.cfg.pretrain.log_freq == 0:
+				metrics.update({"iteration": iter, "total_time": time() -  start_time})
+				self.logger.log(metrics, category="pretrain")
+		self.agent.model.eval()
+		self.agent.model.load_state_dict(best_model)
 
 	def train(self):
 		"""Train agent"""
 
 		# Policy pretraining
 		if self.cfg.get("policy_pretraining", False):
-			print(colored("Policy pretraining", "red", attrs=["bold"]))
-			self.agent.init_bc(self.buffer._offline_buffer)
+			self.pretrain()
 
 		# Start interactive training
 		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))

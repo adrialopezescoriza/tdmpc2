@@ -58,6 +58,7 @@ def print_run(cfg):
 		("observations", observations),
 		("actions", cfg.action_dim),
 		("experiment", cfg.exp_name),
+		("algorithm", cfg.algorithm),
 	]
 	w = np.max([len(_limstr(str(kv[1]))) for kv in kvs]) + 25
 	div = "-" * w

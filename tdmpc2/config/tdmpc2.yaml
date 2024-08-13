@@ -12,6 +12,7 @@ eval_episodes: 10
 eval_freq: 50000
 
 # training
+algorithm: ???
 steps: 10_000_000
 batch_size: 256
 steps_per_update: 4 # utd = steps_per_update / num_envs (in this implementation)

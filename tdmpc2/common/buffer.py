@@ -36,9 +36,19 @@ class Buffer():
 		return self._num_eps
 	
 	@property
+	def batch_size(self):
+		return self._batch_size
+	
+	@property
 	def max_length(self):
 		"""Return the maximum length of episodes in the buffer."""
 		return self._max_length
+	
+	@property
+	def n_elements(self):
+		if hasattr(self, "_buffer"):
+			return len(self._buffer)
+		return 0
 
 	def _reserve_buffer(self, storage):
 		"""
@@ -104,7 +114,7 @@ class Buffer():
 		self._num_eps += b_size
 		return self._num_eps
 
-	def sample(self):
+	def sample(self, return_td=False):
 		"""Sample a batch of subsequences from the buffer."""
 		td = self._buffer.sample().view(-1, self.cfg.horizon+1).permute(1, 0)
-		return self._prepare_batch(td)
+		return td.to(self._device) if return_td else self._prepare_batch(td)

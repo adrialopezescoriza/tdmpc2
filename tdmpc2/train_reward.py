@@ -61,15 +61,18 @@ def train(cfg: dict):
 	env_ = make_env(cfg)
 	if cfg.drS_enable:
 		# DrS
+		cfg.algorithm = "DrS + Modem" if cfg.use_demos else "DrS + TDMPC"
 		trainer_cls = DrsTrainer
 		cfg.n_stages = env_.n_stages
 		buffer_ = DrSBuffer(cfg)
 	elif cfg.use_demos:
 		# MoDem
+		cfg.algorithm = "Modem"
 		trainer_cls = ModemTrainer
 		buffer_ = EnsembleBuffer(cfg)
 	else:
 		# TDMPC
+		cfg.algorithm = "TDMPC"
 		trainer_cls = OfflineTrainer if cfg.multitask else OnlineTrainer
 		buffer_ = Buffer(cfg)
 
