@@ -136,34 +136,15 @@ class DrSBuffer():
 		tds = torch.cat(tds, dim=1)[:, :self.batch_size]
 		return self._prepare_batch(tds)
 
-	def sample_for_disc(self, stage_indices, batch_size : int):
-		"""Sample same batch size from each buffer and flatten T dimension"""
-		# Split batch size along number of buffers (uniform buffer sampling)
-		bs_per_buffer = batch_size // len(stage_indices)
-		n_elements, counter, tds = 0, 0, []
-
-		# Loop buffers until we have all the samples
-		while n_elements < batch_size:
-			stage_idx = stage_indices[counter]
-			stage_buffer = self._stage_buffers[stage_idx]
-
-			# Take minimum of batch sizes
-			bs = min(bs_per_buffer, stage_buffer.cfg.batch_size)
-
+	def sample_for_disc(self, batch_size : int):
+		"""Sample same batch size from each buffer and flatten T dimension. Returns list of obs"""
+		obs = []
+		for buffer in self._stage_buffers:
 			# Only sample if buffer has enough data
-			if bs_per_buffer <= stage_buffer.n_elements:
-				td_ = stage_buffer.sample_single(batch_size=bs)
-				tds.append(td_)
-				n_elements += len(td_) # Is the same as batch_size
-
-			if counter == len(stage_indices) and n_elements == 0:
-				# Not enough data in buffers
-				return None
-
-			counter = (counter + 1) % len(stage_indices)
-
-		# Cut to fit batch_size
-		obs,_,_,_ = self._prepare_batch(torch.cat(tds, dim=0)[:batch_size])
+			if batch_size <= buffer.n_elements:
+				obs.append(buffer.sample_single(batch_size=batch_size)["obs"].to(self._device))
+			else:
+				obs.append(None)
 		return obs
 
 

@@ -1,3 +1,5 @@
+from math import ceil
+
 import torch
 from tensordict.tensordict import TensorDict
 from torchrl.data.replay_buffers import ReplayBuffer, LazyTensorStorage
@@ -116,9 +118,8 @@ class StageBuffer():
 		td = self._buffer.sample().view(-1, self.cfg.horizon+1).permute(1, 0)
 		return td if return_td else self._prepare_batch(td)
 	
-	def sample_single(self, batch_size=None, return_td=True):
+	def sample_single(self, batch_size, return_td=True):
 		"""Sample a single batch with no slicing.
 		WARNING: action[0] -> obs[0] -> action[1] -> obs[1]"""
-		td = self._buffer.sample(self._batch_size) if batch_size is None \
-			else self._buffer.sample(self._batch_size)[:batch_size]
+		td = torch.cat([self._buffer.sample(self._batch_size) for _ in range(ceil(batch_size / self._batch_size))], dim=0)
 		return td if return_td else self._prepare_batch(td)

@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from termcolor import colored
 from omegaconf import OmegaConf
+from functools import wraps
+import time
 
 from common import TASK_SET
 
@@ -34,6 +36,18 @@ def make_dir(dir_path):
 	except OSError:
 		pass
 	return dir_path
+
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        # first item in the args, ie `args[0]` is `self`
+        print(f'Function {func.__name__} Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
 
 
 def print_run(cfg):

@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from .data_utils import sample_from_multi_buffers
+from common.logger import timeit
 
 
 class Discriminator(nn.Module):
@@ -49,11 +49,12 @@ class Discriminator(nn.Module):
 
     def update(self, buffer, encoder_function=None):
         disc_losses = []
+        data = buffer.sample_for_disc(self._cfg.batch_size)
         for stage_idx in range(self.n_stages):
-            success_data = buffer.sample_for_disc(list(range(stage_idx+1,self.n_stages+1)), self._cfg.batch_size)
+            success_data = torch.cat([d for d in data[stage_idx+1:] if d is not None], dim=0)[:self._cfg.batch_size]
             if success_data is None:
                 break
-            fail_data = buffer.sample_for_disc(list(range(stage_idx+1)), self._cfg.batch_size)
+            fail_data = torch.cat([d for d in data[:stage_idx+1] if d is not None], dim=0)[:self._cfg.batch_size]
 
             disc_next_obs = torch.cat([fail_data, success_data], dim=0)
             disc_labels = torch.cat([
