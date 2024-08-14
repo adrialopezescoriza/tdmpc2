@@ -1,9 +1,10 @@
 from time import time
 
+from common.logger import timeit
+
 import numpy as np
 import torch
 from termcolor import colored
-from tqdm import tqdm
 from tensordict.tensordict import TensorDict
 from functools import partial
 from copy import deepcopy

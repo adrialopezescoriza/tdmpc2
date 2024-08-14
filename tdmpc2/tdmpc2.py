@@ -6,6 +6,7 @@ from common import math
 from common.scale import RunningScale
 from common.world_model import WorldModel
 
+from common.logger import timeit
 
 class TDMPC2:
 	"""

@@ -1,10 +1,10 @@
 import torch
 from copy import deepcopy
 from tensordict.tensordict import TensorDict
+from termcolor import colored
+from common.logger import timeit
 
 from .stage_buffer import StageBuffer
-from termcolor import colored
-
 from .data_utils import load_dataset_as_td
 
 def nanmax(tensor, dim=None, keepdim=False):
