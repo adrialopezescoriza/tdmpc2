@@ -75,7 +75,7 @@ class StageBuffer():
 		]) / len(tds)
 		total_bytes = bytes_per_step*self._capacity
 		# Heuristic: decide whether to use CUDA or CPU memory
-		storage_device = 'cuda' if 2.5*total_bytes < mem_free else 'cpu'
+		storage_device = 'cpu'#'cuda' if 2.5*total_bytes < mem_free else 'cpu'
 		return self._reserve_buffer(
 			LazyTensorStorage(self._capacity, device=torch.device(storage_device))
 		)
