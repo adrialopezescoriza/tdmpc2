@@ -40,7 +40,7 @@ class TensorWrapper(gym.Wrapper):
 			obs = self.env.reset(**kwargs)
 			return self._obs_to_tensor(obs, self.cfg.num_envs)
 
-		return self._obs_to_tensor(self.env.reset())
+		return self._obs_to_tensor(self.env.reset(**kwargs))
 	
 	def render(self, *args, **kwargs):
 		return self.env.render(*args, **kwargs)

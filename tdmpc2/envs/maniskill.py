@@ -139,10 +139,9 @@ class ManiSkillWrapper(gym.Wrapper):
 		else:
 			self.observation_space = self.env.observation_space
 
-	def reset(self):
-		obs = self.env.reset()
+	def reset(self, seed=None):
+		obs = self.env.reset(seed=seed)
 		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
-
 	
 	def step(self, action):
 		for _ in range(self.cfg.action_repeat):
