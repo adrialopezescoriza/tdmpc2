@@ -151,6 +151,10 @@ class ManiSkillWrapper(gym.Wrapper):
 		if isinstance(obs, dict):
 			obs = select_obs(self.obs_keys, obs)
 		return obs, reward, False, info
+	
+	def get_obs(self):
+		obs = self.env.observation(self.env.get_obs()) #NOTE: Obs wrapper not implemented inside MS2 Obs Wrapper
+		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
 
 	@property
 	def unwrapped(self):

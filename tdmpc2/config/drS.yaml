@@ -39,8 +39,7 @@ save_csv: false
 # drS
 drS_enable: true
 n_stages: ???
-demo_path: /home/adria/tdmpc2/demo_data/rgb/TDMPC/StackCube_5.pkl
-prefill_buffer_with_demos: true
+demo_path: /home/adria/tdmpc2/demo_data/rgb/TDMPC/StackCube_200.pkl
 drS_discriminator:
     disc_lr: 3e-4
     batch_size: 256

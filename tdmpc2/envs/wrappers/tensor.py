@@ -60,3 +60,10 @@ class TensorWrapper(gym.Wrapper):
 			info = defaultdict(float, info)
 			info['success'] = float(info['success'])
 		return obs, torch.tensor(reward, dtype=torch.float32), torch.tensor(done), info
+	
+	def get_obs(self):
+		if self._wrapped_vectorized:
+			obs = self.env.get_obs()
+			return self._obs_to_tensor(obs, self.cfg.num_envs)
+
+		return self._obs_to_tensor(self.env.get_obs())

@@ -5,6 +5,7 @@ defaults:
 # environment
 task: pick-place-semi
 obs: state
+save_obs: rgbd
 num_envs: 16
 
 # evaluation

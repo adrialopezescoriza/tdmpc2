@@ -56,9 +56,11 @@ def load_dataset_as_td(path, num_traj=None, success_only=False):
         trajectories = trajectories[:num_traj]
 
     def episode_to_tensor(episode):
-        if isinstance(episode[0], dict):
+        if isinstance(episode[0], (torch.Tensor, TensorDict)):
+            return torch.stack([o for o in episode])
+        elif isinstance(episode[0], dict):
             return torch.stack([TensorDict(o) for o in episode])
-        return torch.tensor(episode)
+        return torch.stack([torch.tensor(o) for o in episode])
 
     tds = []
     for traj in trajectories:
