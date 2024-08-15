@@ -51,9 +51,9 @@ class DrsTrainer(Trainer):
 			self.logger.video.record(self.video_env)
 
 		if pretrain:
-			self.logger.video.save(step, "videos/pretrain_video")
+			self.logger.video.save("pretrain/iteration", step, "videos/pretrain_video")
 		else:
-			self.logger.video.save(step)
+			self.logger.video.save("eval/step", step)
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""

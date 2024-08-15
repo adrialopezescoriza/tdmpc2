@@ -32,7 +32,7 @@ class OnlineTrainer(Trainer):
 			obs, _, done, _ = self.video_env.step(action.squeeze(0))
 			t += 1
 			self.logger.video.record(self.video_env)
-		self.logger.video.save(self._step)
+		self.logger.video.save("eval/step", self._step)
 
 	def eval(self):
 		"""Evaluate agent."""

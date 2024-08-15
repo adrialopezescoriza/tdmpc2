@@ -111,11 +111,11 @@ class VideoRecorder:
 		if self.enabled:
 			self.frames.append(env.render())
 
-	def save(self, step, key='videos/eval_video'):
+	def save(self, step_key, step, key='videos/eval_video'):
 		if self.enabled and len(self.frames) > 0:
 			frames = np.stack(self.frames)
 			return self._wandb.log(
-				{key: self._wandb.Video(frames.transpose(0, 3, 1, 2), fps=self.fps, format='mp4')}, step=step
+				{key: self._wandb.Video(frames.transpose(0, 3, 1, 2), fps=self.fps, format='mp4'), step_key: step}
 			)
 
 
@@ -152,6 +152,14 @@ class Logger:
 			dir=self._log_dir,
 			config=OmegaConf.to_container(cfg, resolve=True),
 		)
+
+		# Define x-axis for each metric
+		wandb.define_metric("train/*", step_metric="train/step")
+		wandb.define_metric("eval/*", step_metric="eval/step")
+		wandb.define_metric("videos/eval_video", step_metric="eval/step")
+		wandb.define_metric("pretrain/*", step_metric="pretrain/iteration")
+		wandb.define_metric("videos/pretrain_video", step_metric="pretrain/iteration")
+
 		print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
 		self._wandb = wandb
 		self._video = (
@@ -244,14 +252,10 @@ class Logger:
 	def log(self, d, category="train"):
 		assert category in CAT_TO_COLOR.keys(), f"invalid category: {category}"
 		if self._wandb:
-			if category in {"train", "eval"}:
-				xkey = "step"
-			elif category == "pretrain":
-				xkey = "iteration"
 			_d = dict()
 			for k, v in d.items():
 				_d[category + "/" + k] = v
-			self._wandb.log(_d, step=d[xkey])
+			self._wandb.log(_d)
 		if category == "eval" and self._save_csv:
 			keys = ["step", "episode_reward"]
 			self._eval.append(np.array([d[keys[0]], d[keys[1]]]))
