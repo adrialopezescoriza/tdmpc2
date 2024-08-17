@@ -24,17 +24,19 @@ class DrSBuffer():
 
 		self.horizon = cfg.horizon
 		self.batch_size = cfg.batch_size # Number of episodes per batch
+		self.cfg = cfg
 
 		# Create empty stage buffers
 		for i in range(cfg.n_stages + 1):
 			_cfg = deepcopy(cfg)
-			if i == cfg.n_stages:
+			if cfg.oversample_ratio == 0:
+				_cfg.batch_size = int(cfg.batch_size / (self.n_stages + 1))
+			elif i == cfg.n_stages:
 				# Last buffer = Success buffer (oversampled)
 				_cfg.batch_size = int(cfg.batch_size * cfg.oversample_ratio)
-				_cfg.buffer_size = cfg.buffer_size // (cfg.n_stages + 1)
 			else:
 				_cfg.batch_size = int(cfg.batch_size * ((1 - cfg.oversample_ratio) / self.n_stages))
-				_cfg.buffer_size = cfg.buffer_size // (cfg.n_stages + 1)
+			_cfg.buffer_size = cfg.buffer_size // (cfg.n_stages + 1)
 			self._stage_buffers.append(StageBuffer(_cfg))
 
 		self._capacity = sum([buffer.cfg.buffer_size for buffer in self._stage_buffers])
@@ -43,7 +45,8 @@ class DrSBuffer():
 		# Fill last stage buffer with demos
 		demo_dataset = load_dataset_as_td(cfg.demo_path)
 		# WARNING: Make sure demonstrations contain same type of rewards as online environment!
-		self._stage_buffers[-1].add(torch.stack(demo_dataset, dim=1))
+		self.add(torch.stack(demo_dataset, dim=1))
+		assert self._stage_buffers[-1].num_eps == len(demo_dataset) # Should only add to last stage buffer
 		print(colored(f"Filled demo buffer with {self._stage_buffers[-1].num_eps} trajectories", "green"))
 
 	@property
@@ -72,6 +75,7 @@ class DrSBuffer():
 		print(f'Storage required: {self._total_bytes/1e9:.2f} GB')
 		# Heuristic: decide whether to use CUDA or CPU memory
 		storage_device = 'cuda' if 2.5*self._total_bytes < mem_free else 'cpu'
+		[stage_buffer.set_storage_device(storage_device) for stage_buffer in self._stage_buffers]
 		print(f'Using {storage_device.upper()} memory for storage.')
 
 	def _to_device(self, *args, device=None):
@@ -116,8 +120,12 @@ class DrSBuffer():
 		"""Sample a batch of subsequences from all buffers. Oversample success data."""
 		
 		# Sample from success buffer
-		tds = [self._stage_buffers[-1].sample().to(self._device)]
-		idx, n_episodes = 0, tds[0].shape[1]
+		if self.cfg.oversample_ratio > 0:
+			tds = [self._stage_buffers[-1].sample().to(self._device)]
+			idx, n_episodes = 0, tds[0].shape[1]
+		else:
+			tds = []
+			idx, n_episodes = 0,0
 
 		# Loop buffers until we have all the samples
 		while n_episodes < self.batch_size:
@@ -128,8 +136,8 @@ class DrSBuffer():
 				td = stage_buffer.sample().to(self._device)
 				tds.append(td)
 				n_episodes += td.shape[1]
-			# Skip success buffer
-			idx = (idx + 1) % self.n_stages
+			# Skip success buffer if oversample ratio is not 0
+			idx = (idx + 1) % (self.n_stages + int(self.cfg.oversample_ratio > 0))
 
 		# TODO: 'task' needs to be cat at dim=0
 		# Cut at batch size

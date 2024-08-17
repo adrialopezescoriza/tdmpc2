@@ -27,6 +27,7 @@ class StageBuffer():
 		self._batch_size = cfg.batch_size * (cfg.horizon+1)
 		self._num_eps = 0
 		self._max_length = 0
+		self._storage_device = None
 
 	@property
 	def capacity(self):
@@ -64,20 +65,14 @@ class StageBuffer():
 			prefetch=int(self.cfg.num_envs / self.cfg.steps_per_update),
 			batch_size=self._batch_size,
 		)
+	
+	def set_storage_device(self, device):
+		self._storage_device = device
 
-	def _init(self, tds):
-		"""Initialize the replay buffer. Use the first episode to estimate storage requirements."""
-		mem_free, _ = torch.cuda.mem_get_info()
-		bytes_per_step = sum([
-				(v.numel()*v.element_size() if not isinstance(v, TensorDict) \
-				else sum([x.numel()*x.element_size() for x in v.values()])) \
-			for v in tds.values()
-		]) / len(tds)
-		total_bytes = bytes_per_step*self._capacity
-		# Heuristic: decide whether to use CUDA or CPU memory
-		storage_device = 'cpu'#'cuda' if 2.5*total_bytes < mem_free else 'cpu'
+	def _init(self):
+		"""Initialize the replay buffer."""
 		return self._reserve_buffer(
-			LazyTensorStorage(self._capacity, device=torch.device(storage_device))
+			LazyTensorStorage(self._capacity, device=torch.device(self._storage_device))
 		)
 
 	def _to_device(self, *args, device=None):
@@ -106,7 +101,7 @@ class StageBuffer():
 		td['episode'] = torch.ones_like(td['reward'], dtype=torch.int64) * torch.arange(self._num_eps, self._num_eps+b_size)
 		td = td.permute(1, 0)
 		if self._num_eps == 0:
-			self._buffer = self._init(td[0])
+			self._buffer = self._init()
 		for i in range(b_size):
 			self._buffer.extend(td[i])
 			if td[i].shape[0] > self._max_length:
