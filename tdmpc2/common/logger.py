@@ -130,7 +130,6 @@ class Logger:
 		self._group = cfg_to_group(cfg)
 		self._seed = cfg.seed
 		self._eval = []
-		print_run(cfg)
 		self.project = cfg.get("wandb_project", "none")
 		self.entity = cfg.get("wandb_entity", "none")
 		if cfg.disable_wandb or self.project == "none" or self.entity == "none":
@@ -167,6 +166,8 @@ class Logger:
 			if self._wandb and cfg.save_video
 			else None
 		)
+
+		print_run(cfg)
 
 	@property
 	def video(self):

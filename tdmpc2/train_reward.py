@@ -64,25 +64,26 @@ def train(cfg: dict):
 		cfg.algorithm = "DrS + Modem" if cfg.use_demos else "DrS + TDMPC"
 		trainer_cls = DrsTrainer
 		cfg.n_stages = env_.n_stages
-		buffer_ = DrSBuffer(cfg)
+		buffer_cls = DrSBuffer
 	elif cfg.use_demos:
 		# MoDem
 		cfg.algorithm = "Modem"
 		trainer_cls = ModemTrainer
-		buffer_ = EnsembleBuffer(cfg)
+		buffer_cls = EnsembleBuffer
 	else:
 		# TDMPC
 		cfg.algorithm = "TDMPC"
 		trainer_cls = OfflineTrainer if cfg.multitask else OnlineTrainer
-		buffer_ = Buffer(cfg)
+		buffer_cls = Buffer
+	logger_ = Logger(cfg)
 
 	# Training code
 	trainer = trainer_cls(
 		cfg=cfg,
 		env=env_,
 		agent=TDMPC2(cfg),
-		buffer=buffer_,
-		logger=Logger(cfg),
+		buffer=buffer_cls(cfg),
+		logger=logger_,
 		video_env=make_single_env(cfg, video_only=True) if cfg.save_video else None,
 	)
 	trainer.train()
