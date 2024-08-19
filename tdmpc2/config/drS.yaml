@@ -25,7 +25,7 @@ use_demos: ???
 
 # pretraining
 pretrain:
-    n_epochs: 2000
+    n_epochs: 4000
     eval_freq: 4000
     log_freq: 1000
 

@@ -115,7 +115,8 @@ def select_obs(keys, obs):
 			processed["state"] = flatten(obs[k])
 		elif k == "image":
 			# Only take base camera rgb + Put channel dimension first
-			processed["rgb"] = obs[k]['base_camera']['rgb'].transpose(2,0,1)
+			processed["rgb_base"] = obs[k]['base_camera']['rgb'].transpose(2,0,1)
+			processed["rgb_wrist"] = obs[k]['hand_camera']['rgb'].transpose(2,0,1)
 		else:
 			return NotImplementedError
 	return processed

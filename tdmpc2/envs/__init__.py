@@ -76,6 +76,7 @@ def make_env(cfg):
 		env = Vectorized(cfg, fn)
 		env = TensorWrapper(env)
 	if cfg.get('obs', 'state') == 'rgb':
+		# NOTE: Deprecated
 		env = PixelWrapper(cfg, env)
 	try: # Dict
 		cfg.obs_shape = {k: v.shape for k, v in env.observation_space.spaces.items()}
@@ -107,6 +108,7 @@ def make_single_env(cfg, video_only=False):
 			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
 		env = TensorWrapper(env)
 	if cfg.get('obs', 'state') == 'rgb':
+		# NOTE: Deprecated
 		env = PixelWrapper(cfg, env)
 	if not video_only:
 		try: # Dict

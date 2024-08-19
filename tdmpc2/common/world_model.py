@@ -101,7 +101,7 @@ class WorldModel(nn.Module):
 		if isinstance(obs, (dict, TensorDict)):
 			out = {}
 			for k, v in obs.items():
-				if k == 'rgb' and v.ndim == 5:
+				if k.startswith('rgb') and v.ndim == 5:
 					out[k] = torch.stack([self._encoder[k](o) for o in v])
 				else:
 					out[k] = self._encoder[k](v)
