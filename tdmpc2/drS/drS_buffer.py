@@ -43,7 +43,7 @@ class DrSBuffer():
 		self._total_bytes = None
 
 		# Fill last stage buffer with demos
-		demo_dataset = load_dataset_as_td(cfg.demo_path)
+		demo_dataset = load_dataset_as_td(cfg.demo_path, num_traj=cfg.n_demos)
 		# WARNING: Make sure demonstrations contain same type of rewards as online environment!
 		self.add(torch.stack(demo_dataset, dim=1))
 		assert self._stage_buffers[-1].num_eps == len(demo_dataset) # Should only add to last stage buffer

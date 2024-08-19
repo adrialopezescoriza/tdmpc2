@@ -53,6 +53,7 @@ def load_dataset_as_td(path, num_traj=None, success_only=False):
     if success_only:
         trajectories = [t for t in trajectories if t['infos'][-1]['success']]
     if num_traj is not None:
+        assert num_traj <= len(trajectories), f"Trying to get {num_traj} from demo file with {len(trajectories)} demos"
         trajectories = trajectories[:num_traj]
 
     def episode_to_tensor(episode):
