@@ -3,14 +3,15 @@ defaults:
     - _self_
 
 # environment
-task: pick-place-semi
+task: peg-insertion-semi
 obs: state
-save_obs: rgbd
-num_envs: 16
+obs_save: rgbd
+num_envs: 32
+sim_backend: gpu
 
 # evaluation
-checkpoint: /home/adria/tdmpc2/ckpt/tdmpc/PickCube.pt
-eval_episodes: 100
+checkpoint: /home/adria/tdmpc2/ckpt/ManiSkill3/tdmpc/PegInsertionSide.pt
+eval_episodes: 200
 
 # saving
 save_trajectory: true
@@ -23,3 +24,4 @@ multitask: false
 
 # rendering
 render_for_obs: false
+render_key: rgb_ext # 'rgb_base', 'rgb_hand', 'rgb_ext'

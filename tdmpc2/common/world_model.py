@@ -94,7 +94,6 @@ class WorldModel(nn.Module):
 	def encode(self, obs, task):
 		"""
 		Encodes an observation into its latent representation.
-		This implementation assumes a single state-based observation.
 		"""
 		if self.cfg.multitask:
 			obs = self.task_emb(obs, task)

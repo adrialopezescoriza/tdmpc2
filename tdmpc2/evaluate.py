@@ -9,23 +9,24 @@ import numpy as np
 import torch
 from termcolor import colored
 from tqdm import tqdm
+from copy import deepcopy
 
 from common.parser import parse_cfg
 from common.seed import set_seed
 from common.trajectory_saver import BaseTrajectorySaver
-from envs import make_env, make_single_env
+from envs import make_env
 from tdmpc2 import TDMPC2
 
 torch.backends.cudnn.benchmark = True
 
-def make_video(env, agent, task_idx):
-	video_obs, done, t = env.reset(task_idx=task_idx), False, 0
-	frames = [env.render()]
-	while not done:
-		video_action = agent.act(video_obs.unsqueeze(0), t0=t==0, task=task_idx)
-		video_obs, _, done, _ = env.step(video_action.squeeze())
-		frames.append(env.render())
-	return frames
+def get_obs_save(env, env_obs):
+	env_obs.set_state_dict(env.get_state_dict())
+	return env_obs.get_obs()
+
+def get_frame(env, obs, render_key):
+	if hasattr(obs, "keys") and render_key in obs.keys():
+		return obs[render_key][0].permute(1,2,0).cpu().numpy()
+	return env.render()
 
 @hydra.main(config_name='eval', config_path='./config/')
 def evaluate(cfg: dict):
@@ -60,9 +61,18 @@ def evaluate(cfg: dict):
 		print(colored('Warning: single-task evaluation of multi-task models is not currently supported.', 'red', attrs=['bold']))
 		print(colored('To evaluate a multi-task model, use task=mt80 or task=mt30.', 'red', attrs=['bold']))
 
-	# Make environment
+	print(f"Simulated observation: {cfg.obs}.")
+	print(f"Saved observation: {cfg.obs_save}.")
+	obs_save_flag = (cfg.obs != cfg.obs_save) 
+
+	# Make agent environment
 	env = make_env(cfg)
-	video_env = make_single_env(cfg, video_only=True) if cfg.save_video else None
+
+	# Make observable environment
+	if obs_save_flag:
+		cfg_obs = deepcopy(cfg)
+		cfg_obs.obs = cfg_obs.obs_save
+		env_obs = make_env(cfg_obs)
 
 	# Load agent
 	agent = TDMPC2(cfg)
@@ -89,32 +99,41 @@ def evaluate(cfg: dict):
 		ep_rewards, ep_successes = [], []
 		with tqdm(total=cfg.eval_episodes) as pbar:
 			while (saver.num_traj if cfg.save_trajectory else len(ep_rewards)) < cfg.eval_episodes:
+				seed = np.random.RandomState().randint(2**32)
+				obs, done, ep_reward, t = env.reset(task_idx=task_idx, seed=seed), torch.tensor(False), 0, 0
+				obs_save = env_obs.reset(task_idx=task_idx, seed=seed) if obs_save_flag else obs
+				assert not obs_save_flag or (env.render(render_all=True) == env_obs.render(render_all=True)).all()
 				if cfg.save_video:
-					frames = make_video(video_env, agent, task_idx)
-					imageio.mimsave(
-						os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
-				obs, done, ep_reward, t = env.reset(task_idx=task_idx), torch.tensor(False), 0, 0
+					frames = [get_frame(env, obs_save, cfg.render_key)]
 				while not done.all():
-					prev_obs = obs
-					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True)
+					prev_obs_save = deepcopy(obs_save)
+					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True).to(obs.device)
 					obs, reward, done, info = env.step(action)
+					obs_save = get_obs_save(env, env_obs) if obs_save_flag else obs
 					ep_reward += reward
 					t += 1
+					if cfg.save_video:
+						frames.append(get_frame(env, obs_save, cfg.render_key))
 					if cfg.save_trajectory:
 						terminated = done # Only terminate when truncated
 						saver.add_transition(
-							prev_obs.numpy(),
-							action.numpy(),
-							obs.numpy(),
-							reward.numpy(),
-							terminated.numpy(),
+							prev_obs_save,
+							action,
+							obs_save,
+							reward,
+							terminated,
 							[dict(zip(info,t)) for t in zip(*info.values())])
 				ep_rewards.append(ep_reward.tolist())
 				ep_successes.append(info['success'].tolist())
-				
+				if cfg.save_video:
+					imageio.mimsave(
+						os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
 				# Update the progress bar
 				pbar.update((saver.num_traj if cfg.save_trajectory else len(ep_rewards)) - pbar.n)
 		pbar.close()
+		env.close()
+		if obs_save_flag:
+			env_obs.close()
 		if cfg.save_trajectory:
 			saver.save(env_id=task)
 	

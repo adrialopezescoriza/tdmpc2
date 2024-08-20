@@ -1,8 +1,8 @@
 import numpy as np
-import gym
+import gymnasium as gym
 
 from collections import OrderedDict
-from gym.spaces import Box, Dict
+from gymnasium.spaces import Box, Dict
 
 def flatten_space(space):
 	obs_shp = []

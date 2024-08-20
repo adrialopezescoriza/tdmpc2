@@ -1,101 +1,77 @@
-import gym
+import gymnasium as gym
 import numpy as np
+import torch
 from envs.utils import convert_observation_to_space
-from envs.wrappers.time_limit import TimeLimit
 from envs.wrappers.drS_reward import DrsRewardWrapper
+from mani_skill.utils.common import flatten_state_dict
 
-import mani_skill2.envs
+import mani_skill.envs
 import envs.tasks.envs_with_stage_indicators
 
 
 MANISKILL_TASKS = {
 	'lift-cube': dict(
-		env='LiftCube-v0',
+		env='LiftCube-v1',
 		control_mode='pd_ee_delta_pose',
 	),
 	'pick-cube': dict(
-		env='PickCube-v0',
+		env='PickCube-v1',
 		control_mode='pd_ee_delta_pose',
 	),
 	'pick-ycb': dict(
-		env='PickSingleYCB-v0',
+		env='PickSingleYCB-v1',
 		control_mode='pd_ee_delta_pose',
 	),
 	'turn-faucet': dict(
-		env='TurnFaucet-v0',
+		env='TurnFaucet-v1',
 		control_mode='pd_ee_delta_pose',
 	),
 	'pick-place': dict(
-		env='PickAndPlace_DrS_reuse-v0',
+		env='PickAndPlace_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'stack-cube': dict (
-		env='StackCube_DrS_reuse-v0',
+		env='StackCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense', 
 	),
 	'peg-insertion': dict(
-		env='PegInsertionSide_DrS_reuse-v0',
+		env='PegInsertionSide_DrS_learn',
 		control_mode='pd_ee_delta_pose',
-		reward_mode='dense',
-	),
-	'open-cabinet': dict(
-		env='OpenCabinetDoor_DrS_learn-v0',
-		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
 		reward_mode='dense',
 	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
-		env='PickAndPlace_DrS_reuse-v0',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='semi_sparse', 
-	),
-	'turn-faucet-semi': dict (
-		env='TurnFaucet_DrS_reuse-v0',
+		env='PickAndPlace_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'stack-cube-semi': dict (
-		env='StackCube_DrS_reuse-v0',
+		env='StackCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'peg-insertion-semi': dict (
-		env='PegInsertionSide_DrS_reuse-v0',
+		env='PegInsertionSide_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'open-cabinet-semi': dict(
-		env='OpenCabinetDoor_DrS_learn-v0',
-		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
-		reward_mode='semi_sparse',
-	),
 	'pick-place-drS': dict (
-		env='PickAndPlace_DrS_reuse-v0',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='drS', 
-	),
-	'turn-faucet-drS': dict (
-		env='TurnFaucet_DrS_reuse-v0',
+		env='PickAndPlace_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
 	),
 	'stack-cube-drS': dict (
-		env='StackCube_DrS_reuse-v0',
+		env='StackCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
 	),
 	'peg-insertion-drS': dict (
-		env='PegInsertionSide_DrS_reuse-v0',
+		env='PegInsertionSide_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
-	),
-	'open-cabinet-drS': dict(
-		env='OpenCabinetDoor_DrS_learn-v0',
-		control_mode='base_pd_joint_vel_arm_pd_joint_vel',
-		reward_mode='drS',
-	),
+	)
 }
 
 def select_obs(keys, obs):
@@ -106,17 +82,18 @@ def select_obs(keys, obs):
 		keys: The keys
 		obs: An array or dictionary of more nested observations or observation spaces 
 	"""
+	if not isinstance(obs, dict):
+		return obs
 	processed = dict()
-	flatten = lambda x: np.concatenate(list(x.values()))
-
 	for k in keys:
 		if k == "agent":
 			# Stack all states
-			processed["state"] = flatten(obs[k])
+			processed["state"] = flatten_state_dict(obs[k], use_torch=True)
 		elif k == "image":
-			# Only take base camera rgb + Put channel dimension first
-			processed["rgb_base"] = obs[k]['base_camera']['rgb'].transpose(2,0,1)
-			processed["rgb_wrist"] = obs[k]['hand_camera']['rgb'].transpose(2,0,1)
+			# Only take rgb + Put channel dimension first
+			# processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
+			processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
+			processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
 		else:
 			return NotImplementedError
 	return processed
@@ -126,42 +103,59 @@ class ManiSkillWrapper(gym.Wrapper):
 		super().__init__(env)
 		self.env = env
 		self.cfg = cfg
-		self.action_space = gym.spaces.Box(
-			low=np.full(self.env.action_space.shape, self.env.action_space.low.min()),
-			high=np.full(self.env.action_space.shape, self.env.action_space.high.max()),
-			dtype=self.env.action_space.dtype,
-		)
+		self.action_space = env.single_action_space
+		self.max_episode_steps = cfg.max_episode_steps
 
 		self.obs_keys = cfg.get("obs_keys", None)
 
 		if hasattr(self.env.observation_space, 'spaces'):
 			# Dict
-			self.observation_space = convert_observation_to_space(select_obs(self.obs_keys, self.env.reset()))
+			obs_sample = {k: v[0] for k, v in self.get_obs().items()}
+			self.observation_space = convert_observation_to_space(obs_sample)
 		else:
-			self.observation_space = self.env.observation_space
+			self.observation_space = gym.spaces.Box(
+				low=np.full(
+					env.single_observation_space.shape,
+					-np.inf,
+					dtype=np.float32),
+				high=np.full(
+					env.single_observation_space.shape,
+					np.inf,
+					dtype=np.float32),
+				dtype=np.float32,
+			)
+
+	def rand_act(self):
+		return torch.tensor(
+			[self.action_space.sample().astype(np.float32) for _ in range(self.num_envs)],
+			dtype=torch.float32, device=self.env.device)
 
 	def reset(self, seed=None):
-		obs = self.env.reset(seed=seed)
+		self._t = 0
+		obs, info = self.env.reset(seed=seed)
 		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
 	
 	def step(self, action):
 		for _ in range(self.cfg.action_repeat):
-			obs, r, _, info = self.env.step(action)
+			obs, r, _, _, info = self.env.step(action)
 			reward = r # Options: max, sum, min
 		if isinstance(obs, dict):
 			obs = select_obs(self.obs_keys, obs)
-		return obs, reward, False, info
+		self._t += 1
+		done = torch.tensor([self._t >= self.max_episode_steps] * self.num_envs)
+		return obs, reward, done, info
 	
 	def get_obs(self):
-		obs = self.env.observation(self.env.get_obs()) #NOTE: Obs wrapper not implemented inside MS2 Obs Wrapper
-		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
+		return select_obs(self.obs_keys, self.env.get_obs())
 
 	@property
 	def unwrapped(self):
 		return self.env.unwrapped
 	
-	def render(self, mode='cameras', **kwargs):
-		return self.env.render(mode, **kwargs)
+	def render(self, *args, **kwargs):
+		if kwargs.get("render_all", False):
+			return self.env.render()
+		return self.env.render()[0].cpu().numpy()
 
 
 def make_env(cfg):
@@ -172,23 +166,24 @@ def make_env(cfg):
 		raise ValueError('Unknown task:', cfg.task)
 	task_cfg = MANISKILL_TASKS[cfg.task]
 	camera_resolution = dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64))
+
+	# WARNING: If one env is already in GPU, the other ones must also be in GPU
 	env = gym.make(
 		task_cfg['env'],
 		obs_mode=cfg.obs,
 		control_mode=task_cfg['control_mode'],
+		num_envs=cfg.num_envs,
 		reward_mode=task_cfg.get("reward_mode", None),
-		camera_cfgs=camera_resolution,
-		render_camera_cfgs=camera_resolution if cfg.get("render_for_obs", False) else dict(width=384, height=384),
+		render_mode='rgb_array',
+		sensor_configs=camera_resolution,
+		human_render_camera_configs=camera_resolution if cfg.get("render_for_obs", False) else dict(width=384, height=384),
+		reconfiguration_freq=1 if cfg.num_envs > 1 else None,
+		sim_backend=cfg.get("sim_backend", "auto"),
+		render_backend="auto",
 	)
 
-	# Seed environment
-	env.seed(cfg.seed)
-	
 	# DrS Reward Wrapper
 	if task_cfg.get("reward_mode", None) == "drS":
 		env = DrsRewardWrapper(env, cfg.drS_ckpt)
-	
 	env = ManiSkillWrapper(env, cfg.maniskill)
-	env = TimeLimit(env, max_episode_steps=100)
-	env.max_episode_steps = env._max_episode_steps
 	return env

@@ -31,12 +31,14 @@ class DrSBuffer():
 			_cfg = deepcopy(cfg)
 			if cfg.oversample_ratio == 0:
 				_cfg.batch_size = int(cfg.batch_size / (self.n_stages + 1))
+				_cfg.buffer_size = cfg.buffer_size // (cfg.n_stages + 1)
 			elif i == cfg.n_stages:
 				# Last buffer = Success buffer (oversampled)
 				_cfg.batch_size = int(cfg.batch_size * cfg.oversample_ratio)
+				_cfg.buffer_size = int(cfg.buffer_size * cfg.oversample_ratio)
 			else:
 				_cfg.batch_size = int(cfg.batch_size * ((1 - cfg.oversample_ratio) / self.n_stages))
-			_cfg.buffer_size = cfg.buffer_size // (cfg.n_stages + 1)
+				_cfg.buffer_size = int(cfg.buffer_size * ((1 - cfg.oversample_ratio) / self.n_stages))
 			self._stage_buffers.append(StageBuffer(_cfg))
 
 		self._capacity = sum([buffer.cfg.buffer_size for buffer in self._stage_buffers])

@@ -1,12 +1,10 @@
 from copy import deepcopy
 import warnings
 
-import gym
+import gymnasium as gym
 
 from envs.wrappers.multitask import MultitaskWrapper
-from envs.wrappers.pixels import PixelWrapper
 from envs.wrappers.tensor import TensorWrapper
-from envs.wrappers.vectorized import Vectorized
 
 def missing_dependencies(task):
 	raise ValueError(f'Missing dependencies for task {task}; install dependencies to use this environment.')
@@ -71,13 +69,7 @@ def make_env(cfg):
 				pass
 		if env is None:
 			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
-		assert cfg.num_envs == 1 or cfg.get('obs', 'state') in ('state', 'rgbd'), \
-			'Vectorized environments only support rgbd observations for Maniskill.'
-		env = Vectorized(cfg, fn)
 		env = TensorWrapper(env)
-	if cfg.get('obs', 'state') == 'rgb':
-		# NOTE: Deprecated
-		env = PixelWrapper(cfg, env)
 	try: # Dict
 		cfg.obs_shape = {k: v.shape for k, v in env.observation_space.spaces.items()}
 	except: # Box
@@ -85,37 +77,4 @@ def make_env(cfg):
 	cfg.action_dim = env.action_space.shape[0]
 	cfg.episode_length = env.max_episode_steps
 	cfg.seed_steps = max(1000, 5*cfg.episode_length) * cfg.num_envs
-	return env
-
-## TODO: Mostly repeated code from above function
-def make_single_env(cfg, video_only=False):
-	"""
-	Make a single environment for TD-MPC2 experiments.
-	"""
-	gym.logger.set_level(40)
-	if cfg.multitask:
-		env = make_multitask_env(cfg)
-
-	else:
-		env = None
-		for fn in [make_dm_control_env, make_maniskill_env, make_metaworld_env, make_myosuite_env]:
-			try:
-				env = fn(cfg)
-				break
-			except ValueError:
-				pass
-		if env is None:
-			raise ValueError(f'Failed to make environment "{cfg.task}": please verify that dependencies are installed and that the task exists.')
-		env = TensorWrapper(env)
-	if cfg.get('obs', 'state') == 'rgb':
-		# NOTE: Deprecated
-		env = PixelWrapper(cfg, env)
-	if not video_only:
-		try: # Dict
-			cfg.obs_shape = {k: v.shape for k, v in env.observation_space.spaces.items()}
-		except: # Box
-			cfg.obs_shape = {cfg.get('obs', 'state'): env.observation_space.shape}
-		cfg.action_dim = env.action_space.shape[0]
-		cfg.episode_length = env.max_episode_steps
-		cfg.seed_steps = max(1000, 5*cfg.episode_length)
 	return env

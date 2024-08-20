@@ -2,7 +2,7 @@ defaults:
     - override hydra/launcher: submitit_local
 
 # environment
-task: dog-run
+task: stack-cube
 obs: state
 num_envs: 16
 
@@ -69,7 +69,7 @@ simnorm_dim: 8
 wandb_project: tdmpc2-drS
 wandb_entity: alopez
 wandb_silent: true
-disable_wandb: false
+disable_wandb: true
 save_csv: false
 save_freq: 1_000_000
 
@@ -99,5 +99,6 @@ bin_size: ???
 maniskill:
     action_repeat: 2
     obs_keys: ["agent", "image"]
+    max_episode_steps: 100
     camera:
         render_size: 128 # 64, 128, 256

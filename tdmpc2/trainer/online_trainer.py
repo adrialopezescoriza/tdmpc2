@@ -23,48 +23,41 @@ class OnlineTrainer(Trainer):
 			episode=self._ep_idx,
 			total_time=time() - self._start_time,
 		)
-	
-	def record_video_episode(self):
-		obs, done, t = self.video_env.reset(), False, 0
-		self.logger.video.init(self.video_env, enabled=True)
-		while not done:
-			action = self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
-			obs, _, done, _ = self.video_env.step(action.squeeze(0))
-			t += 1
-			self.logger.video.record(self.video_env)
-		self.logger.video.save("eval/step", self._step)
 
 	def eval(self):
 		"""Evaluate agent."""
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
+			if self.cfg.save_video:
+				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
 				action = self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
 				t += 1
+				if self.cfg.save_video:
+					self.logger.video.record(self.env)
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
 
-		# Video Episode (single env), no metrics logging
 		if self.cfg.save_video:
-			self.record_video_episode()
+			self.logger.video.save("eval/step", self._step)
 		
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
-			episode_max_reward=torch.cat(ep_max_rewards).mean(),
+			episode_max_reward=torch.cat(ep_max_rewards).max(),
 			episode_success=info['success'].float().mean(),
 		)
 
-	def to_td(self, obs, action=None, reward=None):
+	def to_td(self, obs, action=None, reward=None, device='cpu'):
 		"""Creates a TensorDict for a new episode."""
 		if isinstance(obs, dict):
-			obs = TensorDict(obs, batch_size=(), device='cpu')
+			obs = TensorDict(obs, batch_size=())
 		else:
-			obs = obs.unsqueeze(0).cpu()
+			obs = obs.unsqueeze(0)
 		if action is None:
 			action = torch.full_like(self.env.rand_act(), float('nan'))
 		if reward is None:
@@ -74,7 +67,7 @@ class OnlineTrainer(Trainer):
 			action=action.unsqueeze(0),
 			reward=reward.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
-		return td
+		return td.to(torch.device(device))
 
 	def train(self):
 		"""Train a TD-MPC2 agent."""
@@ -111,7 +104,7 @@ class OnlineTrainer(Trainer):
 					self._ep_idx = self.buffer.add(tds)
 
 				obs = self.env.reset()
-				self._tds = [self.to_td(obs)]
+				self._tds = [self.to_td(obs, device='cpu')]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
@@ -119,7 +112,7 @@ class OnlineTrainer(Trainer):
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
-			self._tds.append(self.to_td(obs, action, reward))
+			self._tds.append(self.to_td(obs, action, reward, device='cpu'))
 
 			# Update agent
 			if self._step >= self.cfg.seed_steps:

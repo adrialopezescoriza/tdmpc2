@@ -1,10 +1,10 @@
 from time import time
-from copy import deepcopy
 
 import numpy as np
 import torch
 from termcolor import colored
 from tensordict.tensordict import TensorDict
+from copy import deepcopy
 
 from trainer.base import Trainer
 
@@ -15,6 +15,7 @@ class ModemTrainer(Trainer):
 		super().__init__(*args, **kwargs)
 
 		self._step = 0
+		self._pretrain_step = 0
 		self._ep_idx = 0
 		self._start_time = time()
 		
@@ -28,52 +29,44 @@ class ModemTrainer(Trainer):
 			episode=self._ep_idx,
 			total_time=time() - self._start_time,
 		)
-	
-	def record_video_episode(self, step, pretrain=False):
-		obs, done, t = self.video_env.reset(), False, 0
-		self.logger.video.init(self.video_env, enabled=True)
-		while not done:
-			action = self.agent.policy_action(obs.unsqueeze(0), eval_mode=True) if pretrain else self.agent.act(obs.unsqueeze(0), t0=t==0, eval_mode=True)
-			obs, _, done, _ = self.video_env.step(action.squeeze(0))
-			t += 1
-			self.logger.video.record(self.video_env)
-
-		if pretrain:
-			self.logger.video.save("pretrain/iteration", step, "videos/pretrain_video")
-		else:
-			self.logger.video.save("eval/step", step)
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
 		ep_rewards, ep_max_rewards = [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
+			if self.cfg.save_video:
+				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
 				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
 				t += 1
+				if self.cfg.save_video:
+					self.logger.video.record(self.env)
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
 
-		# Video Episode (single env), no metrics logging
 		if self.cfg.save_video:
-			self.record_video_episode(self._step)
-			
+			if pretrain:
+				self.logger.video.save("pretrain/iteration", self._pretrain_step, key='videos/pretrain_video')
+			else:
+				self.logger.video.save("eval/step", self._step)
+		
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
 			episode_success=info['success'].float().mean(),
 		)
 
-	def to_td(self, obs, action=None, reward=None):
+	def to_td(self, obs, action=None, reward=None, device='cpu'):
 		"""Creates a TensorDict for a new episode."""
 		if isinstance(obs, dict):
-			obs = TensorDict(obs, batch_size=(), device='cpu')
+			obs = TensorDict(obs, batch_size=())
 		else:
-			obs = obs.unsqueeze(0).cpu()
+			obs = obs.unsqueeze(0)
 		if action is None:
 			action = torch.full_like(self.env.rand_act(), float('nan'))
 		if reward is None:
@@ -83,7 +76,7 @@ class ModemTrainer(Trainer):
 			action=action.unsqueeze(0),
 			reward=reward.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
-		return td
+		return td.to(torch.device(device))
 	
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
@@ -95,23 +88,20 @@ class ModemTrainer(Trainer):
 		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
 
 		self.agent.model.train()
-		for iter in range (n_iterations):
+		for self._pretrain_step in range (n_iterations):
 			metrics = self.agent.init_bc(demo_buffer)
 
-			if iter % self.cfg.pretrain.eval_freq == 0:
+			if self._pretrain_step % self.cfg.pretrain.eval_freq == 0:
 				eval_metrics = self.eval(pretrain=True)
-				eval_metrics.update({"iteration": iter})
+				eval_metrics.update({"iteration": self._pretrain_step})
 				self.logger.log(eval_metrics, category="pretrain")
 
 				if eval_metrics["episode_reward"] > best_score:
 					best_model = deepcopy(self.agent.model.state_dict())
 					best_score = eval_metrics["episode_reward"]
-
-				if self.cfg.save_video:
-						self.record_video_episode(iter, pretrain=True)
 			
-			if iter % self.cfg.pretrain.log_freq == 0:
-				metrics.update({"iteration": iter, "total_time": time() -  start_time})
+			if self._pretrain_step % self.cfg.pretrain.log_freq == 0:
+				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
 		self.agent.model.eval()
 		self.agent.model.load_state_dict(best_model)
@@ -132,7 +122,7 @@ class ModemTrainer(Trainer):
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
-			# Save agent periodically
+			# Save Agent periodically
 			if self._step % self.cfg.save_freq == 0 and self._step > 0:
 					print("Saving agent checkpoint...")
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
@@ -158,7 +148,7 @@ class ModemTrainer(Trainer):
 					self.logger.log(train_metrics, 'train')
 
 				obs = self.env.reset()
-				self._tds = [self.to_td(obs)]
+				self._tds = [self.to_td(obs, device='cpu')]
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
@@ -168,7 +158,7 @@ class ModemTrainer(Trainer):
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
-			self._tds.append(self.to_td(obs, action, reward))
+			self._tds.append(self.to_td(obs, action, reward, device='cpu'))
 			
 			# Update agent
 			if self._step >= self.cfg.seed_steps:

@@ -11,7 +11,7 @@ from termcolor import colored
 from common.parser import parse_cfg
 from common.seed import set_seed
 from common.buffer import Buffer
-from envs import make_env, make_single_env
+from envs import make_env
 from tdmpc2 import TDMPC2
 from common.logger import Logger
 from trainer.offline_trainer import OfflineTrainer
@@ -84,7 +84,6 @@ def train(cfg: dict):
 		agent=TDMPC2(cfg),
 		buffer=buffer_cls(cfg),
 		logger=logger_,
-		video_env=make_single_env(cfg, video_only=True) if cfg.save_video else None,
 	)
 	trainer.train()
 	print('\nTraining completed successfully')
