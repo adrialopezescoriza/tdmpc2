@@ -52,18 +52,18 @@ class Discriminator(nn.Module):
         data = buffer.sample_for_disc(self._cfg.batch_size) # List of data from each buffer
         for stage_idx in range(self.n_stages):
             try:
-                success_data = torch.cat([d for d in data[stage_idx+1:] if d is not None], dim=0)[:self._cfg.batch_size]
+                success_data = torch.cat([d for d in data[stage_idx+1:]], dim=0)[:self._cfg.batch_size]
                 success_data = success_data[torch.randperm(success_data.size(0))[:self._cfg.batch_size]] # shuffle and cut
             except RuntimeError:
                 # Success data list is empty
                 break
-            fail_data = torch.cat([d for d in data[:stage_idx+1] if d is not None], dim=0)
+            fail_data = torch.cat([d for d in data[:stage_idx+1]], dim=0)
             fail_data = fail_data[torch.randperm(fail_data.size(0))[:self._cfg.batch_size]] # shuffle and cut
 
             disc_next_obs = torch.cat([fail_data, success_data], dim=0)
             disc_labels = torch.cat([
-                torch.zeros((self._cfg.batch_size, 1), device=self.device), # fail label is 0
-                torch.ones((self._cfg.batch_size, 1), device=self.device), # success label is 1
+                torch.zeros((len(fail_data), 1), device=self.device), # fail label is 0
+                torch.ones((len(success_data), 1), device=self.device), # success label is 1
             ], dim=0)
 
             if encoder_function:

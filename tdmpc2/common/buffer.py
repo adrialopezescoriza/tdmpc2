@@ -118,3 +118,8 @@ class Buffer():
 		"""Sample a batch of subsequences from the buffer."""
 		td = self._buffer.sample().view(-1, self.cfg.horizon+1).permute(1, 0)
 		return td.to(self._device) if return_td else self._prepare_batch(td)
+
+	def sample_single(self, return_td=False):
+		"""Sample a single batch with no slicing"""
+		td = self._buffer.sample(self._batch_size)
+		return td.to(self._device) if return_td else self._prepare_batch(td)

@@ -21,7 +21,6 @@ class DrsTrainer(Trainer):
 		super().__init__(*args, **kwargs)
 
 		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
-		assert isinstance(self.buffer, DrSBuffer), "DrS Trainer is only compatible with this DrS Buffer"
 
 		self._step = 0
 		self._pretrain_step = 0
@@ -97,7 +96,7 @@ class DrsTrainer(Trainer):
 	
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
-		demo_buffer = self.buffer.stage_buffers[-1]
+		demo_buffer = self.buffer._offline_buffer
 		n_iterations = int(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
 		start_time = time()
 		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
@@ -156,6 +155,7 @@ class DrsTrainer(Trainer):
 
 				if self._step > 0:
 					tds = torch.cat(self._tds)
+					tds['stage'] = (torch.ones_like(tds['reward']) * np.nanmax(tds['reward'], axis=0)).int()
 					self._ep_idx = self.buffer.add(tds)
 					train_metrics.update(
 						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
@@ -187,10 +187,10 @@ class DrsTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
-					# disc_train_metrics = self.disc.update(self.buffer,
-					# 					   encoder_function=partial(self.agent.model.encode, task=None))
-					agent_train_metrics = self.agent.update(self.buffer) #self.agent.update(self.buffer, self.disc.get_reward)
-				# train_metrics.update(disc_train_metrics)
+					disc_train_metrics = self.disc.update(self.buffer,
+										   encoder_function=partial(self.agent.model.encode, task=None))
+					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward)
+				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 
 			self._step += self.cfg.num_envs

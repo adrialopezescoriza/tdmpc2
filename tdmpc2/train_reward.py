@@ -19,7 +19,6 @@ from trainer.online_trainer import OnlineTrainer
 from drS.drS_trainer import DrsTrainer
 from drS.modem_trainer import ModemTrainer
 from drS.ensemble_buffer import EnsembleBuffer
-from drS.drS_buffer import DrSBuffer
 
 torch.backends.cudnn.benchmark = True
 
@@ -64,7 +63,7 @@ def train(cfg: dict):
 		cfg.algorithm = "DrS + Modem" if cfg.use_demos else "DrS + TDMPC"
 		trainer_cls = DrsTrainer
 		cfg.n_stages = env_.n_stages
-		buffer_cls = DrSBuffer
+		buffer_cls = EnsembleBuffer
 	elif cfg.use_demos:
 		# MoDem
 		cfg.algorithm = "Modem"

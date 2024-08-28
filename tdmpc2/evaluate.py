@@ -24,8 +24,13 @@ def get_obs_save(env, env_obs):
 	return env_obs.get_obs()
 
 def get_frame(env, obs, render_key):
-	if hasattr(obs, "keys") and render_key in obs.keys():
-		return obs[render_key][0].permute(1,2,0).cpu().numpy()
+	if hasattr(obs, "keys"):
+		frame = None
+		for k, v in obs.items():
+			if k.startswith('rgb'):
+				frame_ = v[0].permute(1,2,0).cpu().numpy()
+				frame = frame_ if frame is None else np.concatenate((frame, frame_), axis=1)
+		return frame
 	return env.render()
 
 @hydra.main(config_name='eval', config_path='./config/')
@@ -116,12 +121,13 @@ def evaluate(cfg: dict):
 						frames.append(get_frame(env, obs_save, cfg.render_key))
 					if cfg.save_trajectory:
 						terminated = done # Only terminate when truncated
+						info = {k: v.cpu() for k,v in info.items()}
 						saver.add_transition(
-							prev_obs_save,
-							action,
-							obs_save,
-							reward,
-							terminated,
+							prev_obs_save.cpu(),
+							action.cpu(),
+							obs_save.cpu(),
+							reward.cpu(),
+							terminated.cpu(),
 							[dict(zip(info,t)) for t in zip(*info.values())])
 				ep_rewards.append(ep_reward.tolist())
 				ep_successes.append(info['success'].tolist())

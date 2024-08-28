@@ -37,3 +37,22 @@ class EnsembleBuffer(Buffer):
 			torch.cat([action0, action1], dim=1), \
 			torch.cat([reward0, reward1], dim=1), \
 			torch.cat([task0, task1], dim=0) if task0 and task1 else None
+	
+	# TODO: Need to revisit this to ensure some kind of diversity
+	def sample_for_disc(self, batch_size : int):
+		td0 = self._offline_buffer.sample_single(return_td=True)
+		td1 = super().sample_single(return_td=True)
+		
+		# Concat + Shuffle
+		tds = torch.cat([td0, td1], dim=0)
+
+		obs_return = []
+		for stage_index in range(self.cfg.n_stages + 1):
+			# Find indices where reward is equal to stage_index
+			stage_indices = (tds["stage"] == stage_index).nonzero(as_tuple=True)[0]
+			
+			# Extract observations for those indices
+			stage_observations = tds["obs"][stage_indices]
+			obs_return.append(stage_observations)
+		
+		return obs_return
