@@ -133,17 +133,17 @@ class ManiSkillWrapper(gym.Wrapper):
 	def reset(self, seed=None):
 		self._t = 0
 		obs, info = self.env.reset(seed=seed)
-		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
+		return (select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs), info
 	
 	def step(self, action):
 		for _ in range(self.cfg.action_repeat):
-			obs, r, _, _, info = self.env.step(action)
+			obs, r, terminated, _, info = self.env.step(action)
 			reward = r # Options: max, sum, min
 		if isinstance(obs, dict):
 			obs = select_obs(self.obs_keys, obs)
 		self._t += 1
 		done = torch.tensor([self._t >= self.max_episode_steps] * self.num_envs)
-		return obs, reward, done, info
+		return obs, reward, terminated, done, info
 	
 	def get_obs(self):
 		return select_obs(self.obs_keys, self.env.get_obs())

@@ -46,9 +46,27 @@ COPY environment.yaml /root
 RUN conda update conda && \
     conda env update -n base -f /root/environment.yaml && \
     rm /root/environment.yaml && \
-    pip install --upgrade git+https://github.com/haosulab/ManiSkill.git && \
     conda clean -ya && \
     pip cache purge
+
+# mujoco 2.1.0
+ENV MUJOCO_GL egl
+ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
+RUN mkdir -p /root/.mujoco && \
+    wget https://www.tdmpc2.com/files/mjkey.txt && \
+    wget https://github.com/deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz && \
+    tar -xzf mujoco210-linux-x86_64.tar.gz && \
+    rm mujoco210-linux-x86_64.tar.gz && \
+    mv mujoco210 /root/.mujoco/mujoco210 && \
+    mv mjkey.txt /root/.mujoco/mjkey.txt && \
+    find /root/.mujoco -uid 421709 -exec chown root:root {} \; && \
+    python -c "import mujoco_py"
+
+# maniskill
+RUN pip install --upgrade git+https://github.com/haosulab/ManiSkill.git@334fadfd417abcbf1f39c997a1d6715e0167b54f
+
+# metaworld
+RUN pip install git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba
 
 # success!
 RUN echo "Successfully built Modem-DrS Docker image!"

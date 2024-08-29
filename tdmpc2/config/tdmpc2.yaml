@@ -102,3 +102,9 @@ maniskill:
     max_episode_steps: 100
     camera:
         render_size: 128 # 64, 128, 256
+
+metaworld:
+    action_repeat: 2
+    max_episode_steps: 100
+    render_mode: "rgb_array" # "human", "rgb_array"
+    reward_mode: ???
