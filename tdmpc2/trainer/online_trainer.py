@@ -96,7 +96,7 @@ class OnlineTrainer(Trainer):
 					tds = torch.cat(self._tds)
 					train_metrics.update(
 						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
-						episode_max_reward=np.nanmax(tds['reward'], axis=0).mean(),
+						episode_max_reward=np.nanmax(tds['reward'], axis=0).max(),
 						episode_success=info['success'].float().nanmean(),
 					)
 					train_metrics.update(self.common_metrics())

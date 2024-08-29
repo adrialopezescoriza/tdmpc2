@@ -5,6 +5,7 @@ from common.logger import timeit
 import numpy as np
 import torch
 from termcolor import colored
+from math import ceil
 from tensordict.tensordict import TensorDict
 from functools import partial
 from copy import deepcopy
@@ -28,8 +29,7 @@ class DrsTrainer(Trainer):
 		self._start_time = time()
 
 		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
-		
-		print('Agent Architecture:', self.agent.model)
+
 		print('Discriminator Architecture:', self.disc)
 		print("Learnable parameters: {:,}".format(self.agent.model.total_params + self.disc.total_params))
 
@@ -43,7 +43,7 @@ class DrsTrainer(Trainer):
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards = [], []
+		ep_rewards, ep_max_rewards, ep_successes = [], [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
@@ -59,6 +59,7 @@ class DrsTrainer(Trainer):
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
+			ep_successes.append(info['success'].float().mean())
 
 		if self.cfg.save_video:
 			if pretrain:
@@ -69,10 +70,10 @@ class DrsTrainer(Trainer):
 		eval_metrics = dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
-			episode_success=info['success'].float().mean(),
+			episode_success=torch.stack(ep_successes).mean(),
 		)
 		
-		stage_success = {f"stage_{s}_success": ((ep_max_reward >= s).sum() / len(ep_max_reward)).item() for s in range(1, self.env.n_stages + 1)}
+		stage_success = {f"stage_{s}_success": ((torch.cat(ep_max_rewards) >= s).float().mean()) for s in range(1, self.env.n_stages + 1)}
 		eval_metrics.update(stage_success)
 
 		return eval_metrics
@@ -97,9 +98,9 @@ class DrsTrainer(Trainer):
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
 		demo_buffer = self.buffer._offline_buffer
-		n_iterations = int(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		n_iterations = ceil(demo_buffer.n_elements / demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
 		start_time = time()
-		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
+		best_model, best_score = deepcopy(self.agent.model.state_dict()), 0
 
 		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
 
@@ -119,6 +120,10 @@ class DrsTrainer(Trainer):
 			if self._pretrain_step % self.cfg.pretrain.log_freq == 0:
 				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
+		
+		if best_score == 0:
+			best_model = deepcopy(self.agent.model.state_dict())
+		
 		self.agent.model.eval()
 		self.agent.model.load_state_dict(best_model)
 

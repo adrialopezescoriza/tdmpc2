@@ -41,6 +41,16 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'lift-peg-upright': dict(
+		env='LiftPegUpright_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
+	'poke-cube': dict(
+		env='PokeCube_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
 		env='PickAndPlace_DrS_learn',
@@ -54,6 +64,16 @@ MANISKILL_TASKS = {
 	),
 	'peg-insertion-semi': dict (
 		env='PegInsertionSide_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'lift-peg-upright-semi': dict(
+		env='LiftPegUpright_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse',
+	),
+	'poke-cube-semi': dict(
+		env='PokeCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
@@ -71,7 +91,7 @@ MANISKILL_TASKS = {
 		env='PegInsertionSide_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
-	)
+	),
 }
 
 def select_obs(keys, obs):
@@ -91,8 +111,8 @@ def select_obs(keys, obs):
 			processed["state"] = flatten_state_dict(obs[k], use_torch=True)
 		elif k == "image":
 			# Only take rgb + Put channel dimension first
-			# processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
-			processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
+			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
+			# processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
 			processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
 		else:
 			return NotImplementedError
@@ -133,19 +153,19 @@ class ManiSkillWrapper(gym.Wrapper):
 	def reset(self, seed=None):
 		self._t = 0
 		obs, info = self.env.reset(seed=seed)
-		return select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs
+		return (select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs), info
 	
 	def step(self, action):
 		for _ in range(self.cfg.action_repeat):
-			obs, r, _, _, info = self.env.step(action)
+			obs, r, terminated, _, info = self.env.step(action)
 			reward = r # Options: max, sum, min
 		if isinstance(obs, dict):
 			obs = select_obs(self.obs_keys, obs)
 		self._t += 1
 		done = torch.tensor([self._t >= self.max_episode_steps] * self.num_envs)
-		return obs, reward, done, info
+		return obs, reward, terminated, done, info
 	
-	def get_obs(self):
+	def get_obs(self, *args, **kwargs):
 		return select_obs(self.obs_keys, self.env.get_obs())
 
 	@property
@@ -165,7 +185,7 @@ def make_env(cfg):
 	if cfg.task not in MANISKILL_TASKS:
 		raise ValueError('Unknown task:', cfg.task)
 	task_cfg = MANISKILL_TASKS[cfg.task]
-	camera_resolution = dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64))
+	camera_resolution = dict(width=cfg.maniskill.camera.get("image_size", 64), height=cfg.maniskill.camera.get("image_size", 64))
 
 	# WARNING: If one env is already in GPU, the other ones must also be in GPU
 	env = gym.make(
@@ -176,7 +196,7 @@ def make_env(cfg):
 		reward_mode=task_cfg.get("reward_mode", None),
 		render_mode='rgb_array',
 		sensor_configs=camera_resolution,
-		human_render_camera_configs=camera_resolution if cfg.get("render_for_obs", False) else dict(width=384, height=384),
+		human_render_camera_configs=dict(width=384, height=384),
 		reconfiguration_freq=1 if cfg.num_envs > 1 else None,
 		sim_backend=cfg.get("sim_backend", "auto"),
 		render_backend="auto",
