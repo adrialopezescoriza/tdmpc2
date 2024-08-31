@@ -2,6 +2,7 @@ from time import time
 
 import numpy as np
 import torch
+from math import ceil
 from termcolor import colored
 from tensordict.tensordict import TensorDict
 from copy import deepcopy
@@ -81,7 +82,7 @@ class ModemTrainer(Trainer):
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
 		demo_buffer = self.buffer._offline_buffer
-		n_iterations = int(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		n_iterations = ceil(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
 		start_time = time()
 		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
 

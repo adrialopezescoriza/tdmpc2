@@ -75,7 +75,7 @@ class TDMPC2:
 		"""
 		Initialize policy using a behavior cloning objective.
 		"""
-		obs, action, rew, task = buffer.sample(return_td=False)
+		obs, action, rew, task = buffer.sample_single(return_td=False)
 		self.bc_optim.zero_grad(set_to_none=True)
 		a = self.model.pi(self.model.encode(obs[:-1], task), task)[0]
 		loss = F.mse_loss(a, action, reduce=True)

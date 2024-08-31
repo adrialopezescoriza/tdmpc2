@@ -84,13 +84,43 @@ class StackCube_DrS_learn(DrS_BaseEnv, StackCubeEnv):
 # Peg Insertion
 ############################################
 
+import sapien
+from mani_skill import PACKAGE_ASSET_DIR
+from mani_skill.agents.registration import register_agent
+from mani_skill.agents.robots.panda import PandaWristCam
+from typing import Union
+
+@register_agent()
+class PandaWristCamPegInsert(PandaWristCam):
+    """Panda arm robot with the real sense camera attached to gripper looking slighlty up"""
+
+    uid = "panda_wristcam_peg_insert"
+
+    @property
+    def _sensor_configs(self):
+        return [
+            CameraConfig(
+                uid="hand_camera",
+                pose=sapien.Pose(p=[0, 0, 0], q=[0.9914449, 0, -0.1305262, 0]),
+                width=128,
+                height=128,
+                fov=np.pi / 2,
+                near=0.01,
+                far=100,
+                mount=self.robot.links_map["camera_link"],
+            )
+        ]
+
 from mani_skill.envs.tasks.tabletop.peg_insertion_side import PegInsertionSideEnv
 
 @register_env("PegInsertionSide_DrS_learn", max_episode_steps=100)
 class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
+    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_peg_insert"]
+    agent: Union[PandaWristCam, PandaWristCamPegInsert]
+
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam_peg_insert", **kwargs)
 
     def is_peg_pre_inserted(self):
         peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose

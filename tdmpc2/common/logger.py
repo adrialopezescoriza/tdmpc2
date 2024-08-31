@@ -109,7 +109,16 @@ class VideoRecorder:
 
 	def record(self, env):
 		if self.enabled:
-			self.frames.append(env.render())
+			obs = env.get_obs()
+			frame = None
+			if hasattr(obs, "keys"):
+				for k, v in obs.items():
+					if k.startswith('rgb'):
+						frame_ = v[0].permute(1,2,0).cpu().numpy()
+						frame = frame_ if frame is None else np.concatenate((frame, frame_), axis=1)
+			if frame is None:
+				frame = env.render()
+			self.frames.append(frame)
 
 	def save(self, step_key, step, key='videos/eval_video'):
 		if self.enabled and len(self.frames) > 0:
