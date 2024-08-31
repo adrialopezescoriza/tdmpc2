@@ -21,7 +21,3 @@ save_video: true
 
 # misc
 multitask: false
-
-# rendering
-render_for_obs: false
-render_key: rgb_ext # 'rgb_base', 'rgb_hand', 'rgb_ext'

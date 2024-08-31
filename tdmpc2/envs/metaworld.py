@@ -5,6 +5,8 @@ from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE
 from envs.wrappers.vectorized import Vectorized
 from envs.wrappers.mw_stages import getRewardWrapper
 
+from envs.utils import convert_observation_to_space
+
 class MetaWorldWrapper(gym.Wrapper):
 	def __init__(self, env, cfg):
 		super().__init__(env)
@@ -15,22 +17,49 @@ class MetaWorldWrapper(gym.Wrapper):
 		self.env._freeze_rand_vec = False
 		self.max_episode_steps = cfg.max_episode_steps
 
+		# Adapt rendering size (this only works for gym <= 0.29)
+		self.env.mujoco_renderer.model.vis.global_.offwidth = cfg.camera.image_size
+		self.env.mujoco_renderer.model.vis.global_.offheight = cfg.camera.image_size
+
+		self._state_obs, _ = super().reset()
+		self.observation_space = convert_observation_to_space(self.get_obs(self.cfg.obs))
+
+	def get_obs(self, obs_type = None):
+		obs_type = self.cfg.obs if obs_type is None else obs_type
+		if obs_type == "state":
+			return self._state_obs
+		elif obs_type in ("rgbd", "rgb"):
+			return {
+				"state": self._get_robot_state(),
+				"rgb_base": self._get_pixel_obs(),
+			}
+		else:
+			raise NotImplementedError
+
 	def reset(self, **kwargs):
 		self._t = 0
 		obs, info = super().reset(**kwargs)
-		obs = obs.astype(np.float32)
+		self._state_obs = obs.astype(np.float32)
 		self.env.step(np.zeros(self.env.action_space.shape))
-		return obs, info
+		return self.get_obs(self.cfg.obs), info
 
 	def step(self, action):
 		reward = 0
 		for _ in range(self.cfg.action_repeat):
 			obs, r, terminated, _, info = self.env.step(action.copy())
 			reward = r # Options: max, sum, min
-		obs = obs.astype(np.float32)
+		self._state_obs = obs.astype(np.float32)
 		self._t += 1
 		done = self._t >= self.max_episode_steps
-		return obs, reward, terminated, done, info
+		return self.get_obs(self.cfg.obs), reward, terminated, done, info
+	
+	def _get_robot_state(self):
+		state = self._state_obs.astype(np.float32)
+		return np.concatenate((state[:4], state[18 : 18 + 4]))
+
+	def _get_pixel_obs(self):
+		img = self.render()
+		return img.transpose(2, 0, 1)
 
 	@property
 	def unwrapped(self):
@@ -38,6 +67,12 @@ class MetaWorldWrapper(gym.Wrapper):
 
 	def render(self, *args, **kwargs):
 		return self.env.render(*args, **kwargs).copy()
+	
+	def get_state(self):
+		return self.env.get_env_state()
+	
+	def set_state(self, env_state):
+		self.env.set_env_state(env_state)
 
 def _make_env(cfg):
 	"""
@@ -47,10 +82,13 @@ def _make_env(cfg):
 	if not cfg.task.startswith('mw-') or env_id not in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
 		raise ValueError('Unknown task:', cfg.task)
 	cfg.metaworld.reward_mode = cfg.task.split("-")[-1]
+	cfg.metaworld.obs = cfg.get("obs", "state")
 	if cfg.metaworld.reward_mode == "semi":
 		cfg.metaworld.reward_mode = "semi_sparse"
-	assert cfg.obs == 'state', 'This task only supports state observations.'
-	env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_id](seed=cfg.seed, render_mode=cfg.metaworld.render_mode)
+	env = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[env_id](
+			seed=cfg.seed, 
+			render_mode=cfg.metaworld.render_mode,
+		)
 	env = getRewardWrapper(env_id)(env, cfg.metaworld)
 	env = MetaWorldWrapper(env, cfg.metaworld)
 	return env

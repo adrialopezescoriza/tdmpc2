@@ -54,5 +54,5 @@ class TensorWrapper(gym.Wrapper):
 			info = TensorDict(info)
 		return obs, torch.tensor(reward, dtype=torch.float32), torch.tensor(done), info
 	
-	def get_obs(self):
-		return self._obs_to_tensor(self.env.get_obs())
+	def get_obs(self, *args, **kwargs):
+		return self._obs_to_tensor(self.env.get_obs(*args, **kwargs))

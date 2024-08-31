@@ -37,15 +37,27 @@ class Vectorized(gym.Wrapper):
 	def rand_act(self):
 		return torch.rand((self.cfg.num_envs, *self.action_space.shape)) * 2 - 1
 
-	def reset(self):
-		return self.env.reset()
+	def reset(self, **kwargs):
+		return self.env.reset(**kwargs)
 
 	def step(self, action):
 		obs, r, terminated, truncated, info = self.env.step(action.numpy())
 		if "final_observation" in info.keys():
-			obs = np.stack(info["final_observation"],axis=0)
+			if isinstance(obs, dict):
+				obs = {k: np.stack([dic[k] for dic in info["final_observation"]], axis=0) for k in info["final_observation"][0]}
+			else:
+				obs = np.stack(info["final_observation"],axis=0)
 			info = {k: [dic[k] for dic in info["final_info"]] for k in info["final_info"][0]}
 		return obs, r, terminated, truncated, info 
 
-	def render(self, *args, **kwargs):
-		return self.env.call("render")[0]
+	def render(self, render_all=False):
+		return self.env.call("render")[0] if not render_all else self.env.call("render")
+	
+	def get_obs(self, *args, **kwargs):
+		obs = self.env.call("get_obs", *args, **kwargs)
+		if isinstance(obs[0], dict):
+			return {k: np.stack([dic[k] for dic in obs], axis=0) for k in obs[0]}
+		return np.stack(obs,axis=0)
+	
+	def get_state(self):
+		return self.env.call("get_state")

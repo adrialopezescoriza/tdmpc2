@@ -145,7 +145,7 @@ class ManiSkillWrapper(gym.Wrapper):
 		done = torch.tensor([self._t >= self.max_episode_steps] * self.num_envs)
 		return obs, reward, terminated, done, info
 	
-	def get_obs(self):
+	def get_obs(self, *args, **kwargs):
 		return select_obs(self.obs_keys, self.env.get_obs())
 
 	@property
@@ -165,7 +165,7 @@ def make_env(cfg):
 	if cfg.task not in MANISKILL_TASKS:
 		raise ValueError('Unknown task:', cfg.task)
 	task_cfg = MANISKILL_TASKS[cfg.task]
-	camera_resolution = dict(width=cfg.maniskill.camera.get("render_size", 64), height=cfg.maniskill.camera.get("render_size", 64))
+	camera_resolution = dict(width=cfg.maniskill.camera.get("image_size", 64), height=cfg.maniskill.camera.get("image_size", 64))
 
 	# WARNING: If one env is already in GPU, the other ones must also be in GPU
 	env = gym.make(
@@ -176,7 +176,7 @@ def make_env(cfg):
 		reward_mode=task_cfg.get("reward_mode", None),
 		render_mode='rgb_array',
 		sensor_configs=camera_resolution,
-		human_render_camera_configs=camera_resolution if cfg.get("render_for_obs", False) else dict(width=384, height=384),
+		human_render_camera_configs=dict(width=384, height=384),
 		reconfiguration_freq=1 if cfg.num_envs > 1 else None,
 		sim_backend=cfg.get("sim_backend", "auto"),
 		render_backend="auto",
