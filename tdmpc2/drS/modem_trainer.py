@@ -33,7 +33,7 @@ class ModemTrainer(Trainer):
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards = [], []
+		ep_rewards, ep_max_rewards, ep_successes = [], [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
@@ -49,6 +49,7 @@ class ModemTrainer(Trainer):
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
+			ep_successes.append(info['success'].float().mean())
 
 		if self.cfg.save_video:
 			if pretrain:
@@ -59,7 +60,7 @@ class ModemTrainer(Trainer):
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
-			episode_success=info['success'].float().mean(),
+			episode_success=torch.stack(ep_successes).mean(),
 		)
 
 	def to_td(self, obs, action=None, reward=None, device='cpu'):
@@ -82,7 +83,7 @@ class ModemTrainer(Trainer):
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
 		demo_buffer = self.buffer._offline_buffer
-		n_iterations = ceil(demo_buffer.n_elements // demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		n_iterations = ceil(demo_buffer.n_elements / demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
 		start_time = time()
 		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
 

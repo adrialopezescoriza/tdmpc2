@@ -110,4 +110,4 @@ metaworld:
     reward_mode: ???
     obs: ???
     camera:
-        image_size: 128 # 64, 128, 256
+        image_size: 224 # 64, 128, 256

@@ -44,7 +44,7 @@ class DrsTrainer(Trainer):
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards = [], []
+		ep_rewards, ep_max_rewards, ep_successes = [], [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
@@ -60,6 +60,7 @@ class DrsTrainer(Trainer):
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
+			ep_successes.append(info['success'].float().mean())
 
 		if self.cfg.save_video:
 			if pretrain:
@@ -70,10 +71,10 @@ class DrsTrainer(Trainer):
 		eval_metrics = dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
-			episode_success=info['success'].float().mean(),
+			episode_success=torch.stack(ep_successes).mean(),
 		)
 		
-		stage_success = {f"stage_{s}_success": ((ep_max_reward >= s).sum() / len(ep_max_reward)).item() for s in range(1, self.env.n_stages + 1)}
+		stage_success = {f"stage_{s}_success": ((torch.cat(ep_max_rewards) >= s).float().mean()) for s in range(1, self.env.n_stages + 1)}
 		eval_metrics.update(stage_success)
 
 		return eval_metrics

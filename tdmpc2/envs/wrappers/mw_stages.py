@@ -7,6 +7,10 @@ SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse", "drS")
 def getRewardWrapper(task: str):
     if task.startswith("assembly"):
         return Assembly_DrS
+    if task.startswith("pick-place"):
+        return PickAndPlace_DrS
+    if task.startswith("peg-insert-side"):
+        return PegInsertSide_DrS
     raise NotImplementedError(f"Task {task} is not supported yet.")
 
 class MetaWorldRewardWrapper(gym.Wrapper):
@@ -42,6 +46,34 @@ class MetaWorldRewardWrapper(gym.Wrapper):
 # Assembly
 ############################################
 class Assembly_DrS(MetaWorldRewardWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.n_stages = 2
+    
+    def compute_stage_indicator(self, eval_info):
+        return {
+            'is_grasped': float(eval_info['grasp_success'] or eval_info['success']),
+            'success': float(eval_info['success'])
+        }
+    
+############################################
+# Pick And Place
+############################################
+class PickAndPlace_DrS(MetaWorldRewardWrapper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.n_stages = 2
+    
+    def compute_stage_indicator(self, eval_info):
+        return {
+            'is_grasped': float(eval_info['grasp_success'] or eval_info['success']),
+            'success': float(eval_info['success'])
+        }
+    
+############################################
+# Peg Insertion
+############################################
+class PegInsertSide_DrS(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2

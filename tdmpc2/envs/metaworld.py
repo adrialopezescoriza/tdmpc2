@@ -14,7 +14,6 @@ class MetaWorldWrapper(gym.Wrapper):
 		self.cfg = cfg
 		self.camera_name = "corner2"
 		self.env.model.cam_pos[2] = [0.75, 0.075, 0.7]
-		self.env._freeze_rand_vec = False
 		self.max_episode_steps = cfg.max_episode_steps
 
 		# Adapt rendering size (this only works for gym <= 0.29)
@@ -39,8 +38,8 @@ class MetaWorldWrapper(gym.Wrapper):
 	def reset(self, **kwargs):
 		self._t = 0
 		obs, info = super().reset(**kwargs)
+		obs = self.env.step(np.zeros(self.env.action_space.shape))[0]
 		self._state_obs = obs.astype(np.float32)
-		self.env.step(np.zeros(self.env.action_space.shape))
 		return self.get_obs(self.cfg.obs), info
 
 	def step(self, action):
@@ -78,10 +77,11 @@ def _make_env(cfg):
 	"""
 	Make Meta-World environment.
 	"""
-	env_id = cfg.task.split("-")[1] + "-v2-goal-observable"
+	parts = cfg.task.split("-") # Format is "env-task_id-reward_type"
+	env_id = '-'.join(parts[1:-1])  + "-v2-goal-observable"
 	if not cfg.task.startswith('mw-') or env_id not in ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE:
 		raise ValueError('Unknown task:', cfg.task)
-	cfg.metaworld.reward_mode = cfg.task.split("-")[-1]
+	cfg.metaworld.reward_mode = parts[-1]
 	cfg.metaworld.obs = cfg.get("obs", "state")
 	if cfg.metaworld.reward_mode == "semi":
 		cfg.metaworld.reward_mode = "semi_sparse"
@@ -89,6 +89,7 @@ def _make_env(cfg):
 			seed=cfg.seed, 
 			render_mode=cfg.metaworld.render_mode,
 		)
+	env._freeze_rand_vec = False
 	env = getRewardWrapper(env_id)(env, cfg.metaworld)
 	env = MetaWorldWrapper(env, cfg.metaworld)
 	return env

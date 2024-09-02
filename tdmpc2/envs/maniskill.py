@@ -91,7 +91,7 @@ def select_obs(keys, obs):
 			processed["state"] = flatten_state_dict(obs[k], use_torch=True)
 		elif k == "image":
 			# Only take rgb + Put channel dimension first
-			#processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
+			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
 			processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
 			processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
 		else:
