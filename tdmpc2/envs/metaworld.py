@@ -12,7 +12,6 @@ class MetaWorldWrapper(gym.Wrapper):
 		super().__init__(env)
 		self.env = env
 		self.cfg = cfg
-		self.camera_name = "corner2"
 		self.env.model.cam_pos[2] = [0.75, 0.075, 0.7]
 		self.max_episode_steps = cfg.max_episode_steps
 
@@ -65,7 +64,10 @@ class MetaWorldWrapper(gym.Wrapper):
 		return self.env.unwrapped
 
 	def render(self, *args, **kwargs):
-		return self.env.render(*args, **kwargs).copy()
+		# BUG: MuJoco Rendering bug, corner images are flipped for some reason
+		if self.env.camera_name in ("corner", "corner2"):
+			return np.flip(self.env.render(*args, **kwargs), axis=0)
+		return self.env.render(*args, **kwargs)
 	
 	def get_state(self):
 		return self.env.get_env_state()
@@ -89,6 +91,7 @@ def _make_env(cfg):
 			seed=cfg.seed, 
 			render_mode=cfg.metaworld.render_mode,
 		)
+	env.camera_name = "corner2"
 	env._freeze_rand_vec = False
 	env = getRewardWrapper(env_id)(env, cfg.metaworld)
 	env = MetaWorldWrapper(env, cfg.metaworld)
