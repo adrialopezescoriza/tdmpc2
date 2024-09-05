@@ -27,8 +27,8 @@ use_demos: ???
 # pretraining
 pretrain:
     n_epochs: 10000
-    eval_freq: 4000
-    log_freq: 1000
+    eval_freq: 1000
+    log_freq: 500
 
 # logging
 wandb_project: maniskill3

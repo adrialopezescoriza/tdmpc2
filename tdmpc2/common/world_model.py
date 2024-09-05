@@ -99,11 +99,11 @@ class WorldModel(nn.Module):
 			obs = self.task_emb(obs, task)
 		if isinstance(obs, (dict, TensorDict)):
 			out = {}
-			for k, v in obs.items():
-				if k.startswith('rgb') and v.ndim == 5:
-					out[k] = torch.stack([self._encoder[k](o) for o in v])
+			for k, enc in self._encoder.items():
+				if k.startswith('rgb') and obs[k].ndim == 5:
+					out[k] = torch.stack([enc(o) for o in obs[k]])
 				else:
-					out[k] = self._encoder[k](v)
+					out[k] = enc(obs[k])
 			return torch.stack([out[k] for k in out.keys()]).mean(0)
 		return self._encoder[self.cfg.obs](obs)
 

@@ -41,6 +41,16 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'lift-peg-upright': dict(
+		env='LiftPegUpright_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
+	'poke-cube': dict(
+		env='PokeCube_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
 		env='PickAndPlace_DrS_learn',
@@ -54,6 +64,16 @@ MANISKILL_TASKS = {
 	),
 	'peg-insertion-semi': dict (
 		env='PegInsertionSide_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'lift-peg-upright-semi': dict(
+		env='LiftPegUpright_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse',
+	),
+	'poke-cube-semi': dict(
+		env='PokeCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
@@ -71,7 +91,7 @@ MANISKILL_TASKS = {
 		env='PegInsertionSide_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='drS', 
-	)
+	),
 }
 
 def select_obs(keys, obs):
@@ -92,7 +112,7 @@ def select_obs(keys, obs):
 		elif k == "image":
 			# Only take rgb + Put channel dimension first
 			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
-			processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
+			# processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
 			processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
 		else:
 			return NotImplementedError

@@ -28,7 +28,7 @@ class MetaWorldWrapper(gym.Wrapper):
 			return self._state_obs
 		elif obs_type in ("rgbd", "rgb"):
 			return {
-				"state": self._get_robot_state(),
+				#"state": self._get_robot_state(),
 				"rgb_base": self._get_pixel_obs(),
 			}
 		else:
