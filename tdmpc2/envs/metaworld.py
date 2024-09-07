@@ -28,7 +28,7 @@ class MetaWorldWrapper(gym.Wrapper):
 			return self._state_obs
 		elif obs_type in ("rgbd", "rgb"):
 			return {
-				#"state": self._get_robot_state(),
+				"state": self._get_robot_state(),
 				"rgb_base": self._get_pixel_obs(),
 			}
 		else:
@@ -53,7 +53,7 @@ class MetaWorldWrapper(gym.Wrapper):
 	
 	def _get_robot_state(self):
 		state = self._state_obs.astype(np.float32)
-		return np.concatenate((state[:4], state[18 : 18 + 4]))
+		return state[0:4] # Current gripper hand state
 
 	def _get_pixel_obs(self):
 		img = self.render()
