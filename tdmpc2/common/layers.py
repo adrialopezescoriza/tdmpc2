@@ -136,12 +136,12 @@ def conv(in_shape, num_channels, latent_dim, act=None):
 	Basic convolutional encoder for TD-MPC2 with raw image observations.
 	5 layers of convolution with ReLU activations, followed by a linear layer.
 	"""
-	n_layers = int(np.log2(in_shape[-1] / np.sqrt(latent_dim/num_channels))) # Heuristic
+	n_layers = round(np.log2(in_shape[-1] / np.sqrt(latent_dim/num_channels))) - 3 # Heuristic
 	layers = [
 		ShiftAug(), PixelPreprocess(),
 		nn.Conv2d(in_shape[0], num_channels, 7, stride=2), nn.ReLU(inplace=True),
 		nn.Conv2d(num_channels, num_channels, 5, stride=2), nn.ReLU(inplace=True),
-		*([nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True)] * (n_layers-2)),
+		*([nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True)] * n_layers),
 		nn.Conv2d(num_channels, num_channels, 3, stride=1), nn.Flatten()]
 	out_shape = _get_out_shape((in_shape), layers)
 	layers.extend([nn.Linear(np.prod(out_shape), latent_dim)])
