@@ -101,7 +101,7 @@ class DrsTrainer(Trainer):
 		demo_buffer = self.buffer._offline_buffer
 		n_iterations = ceil(demo_buffer.n_elements / demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
 		start_time = time()
-		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
+		best_model, best_score = deepcopy(self.agent.model.state_dict()), 0
 
 		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
 
@@ -121,6 +121,10 @@ class DrsTrainer(Trainer):
 			if self._pretrain_step % self.cfg.pretrain.log_freq == 0:
 				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
+		
+		if best_score == 0:
+			best_model = deepcopy(self.agent.model.state_dict())
+		
 		self.agent.model.eval()
 		self.agent.model.load_state_dict(best_model)
 
