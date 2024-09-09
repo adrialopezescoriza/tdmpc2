@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import torch
 
@@ -55,3 +55,6 @@ class MultitaskWrapper(gym.Wrapper):
 	def step(self, action):
 		obs, reward, done, info = self.env.step(action[:self.env.action_space.shape[0]])
 		return self._pad_obs(obs), reward, done, info
+	
+	def render(self, *args, **kwargs):
+		return self.env.render(*args, **kwargs)

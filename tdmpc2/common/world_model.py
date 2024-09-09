@@ -3,6 +3,7 @@ from copy import deepcopy
 import numpy as np
 import torch
 import torch.nn as nn
+from tensordict.tensordict import TensorDict
 
 from common import layers, math, init
 
@@ -93,12 +94,17 @@ class WorldModel(nn.Module):
 	def encode(self, obs, task):
 		"""
 		Encodes an observation into its latent representation.
-		This implementation assumes a single state-based observation.
 		"""
 		if self.cfg.multitask:
 			obs = self.task_emb(obs, task)
-		if self.cfg.obs == 'rgb' and obs.ndim == 5:
-			return torch.stack([self._encoder[self.cfg.obs](o) for o in obs])
+		if isinstance(obs, (dict, TensorDict)):
+			out = {}
+			for k, enc in self._encoder.items():
+				if k.startswith('rgb') and obs[k].ndim == 5:
+					out[k] = torch.stack([enc(o) for o in obs[k]])
+				else:
+					out[k] = enc(obs[k])
+			return torch.stack([out[k] for k in out.keys()]).mean(0)
 		return self._encoder[self.cfg.obs](obs)
 
 	def next(self, z, a, task):

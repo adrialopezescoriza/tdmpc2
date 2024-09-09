@@ -1,8 +1,8 @@
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from functorch import combine_state_for_ensemble
-
 
 class Ensemble(nn.Module):
 	"""
@@ -107,6 +107,15 @@ class NormedLinear(nn.Linear):
 			f"act={self.act.__class__.__name__})"
 
 
+def _get_out_shape(in_shape, layers):
+    """Utility function. Returns the output shape of a network for a given input shape."""
+    x = torch.randn(*in_shape).unsqueeze(0)
+    return (
+        (nn.Sequential(*layers) if isinstance(layers, list) else layers)(x)
+        .squeeze(0)
+        .shape
+    )
+
 def mlp(in_dim, mlp_dims, out_dim, act=None, dropout=0.):
 	"""
 	Basic building block of TD-MPC2.
@@ -122,18 +131,20 @@ def mlp(in_dim, mlp_dims, out_dim, act=None, dropout=0.):
 	return nn.Sequential(*mlp)
 
 
-def conv(in_shape, num_channels, act=None):
+def conv(in_shape, num_channels, latent_dim, act=None):
 	"""
 	Basic convolutional encoder for TD-MPC2 with raw image observations.
-	4 layers of convolution with ReLU activations, followed by a linear layer.
+	5 layers of convolution with ReLU activations, followed by a linear layer.
 	"""
-	assert in_shape[-1] == 64 # assumes rgb observations to be 64x64
+	n_layers = round(np.log2(in_shape[-1] / np.sqrt(latent_dim/num_channels))) - 3 # Heuristic
 	layers = [
 		ShiftAug(), PixelPreprocess(),
 		nn.Conv2d(in_shape[0], num_channels, 7, stride=2), nn.ReLU(inplace=True),
 		nn.Conv2d(num_channels, num_channels, 5, stride=2), nn.ReLU(inplace=True),
-		nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True),
+		*([nn.Conv2d(num_channels, num_channels, 3, stride=2), nn.ReLU(inplace=True)] * n_layers),
 		nn.Conv2d(num_channels, num_channels, 3, stride=1), nn.Flatten()]
+	out_shape = _get_out_shape((in_shape), layers)
+	layers.extend([nn.Linear(np.prod(out_shape), latent_dim)])
 	if act:
 		layers.append(act)
 	return nn.Sequential(*layers)
@@ -144,10 +155,10 @@ def enc(cfg, out={}):
 	Returns a dictionary of encoders for each observation in the dict.
 	"""
 	for k in cfg.obs_shape.keys():
-		if k == 'state':
+		if k.startswith('state'):
 			out[k] = mlp(cfg.obs_shape[k][0] + cfg.task_dim, max(cfg.num_enc_layers-1, 1)*[cfg.enc_dim], cfg.latent_dim, act=SimNorm(cfg))
-		elif k == 'rgb':
-			out[k] = conv(cfg.obs_shape[k], cfg.num_channels, act=SimNorm(cfg))
+		elif k.startswith('rgb'):
+			out[k] = conv(cfg.obs_shape[k], cfg.num_channels, cfg.latent_dim, act=SimNorm(cfg))
 		else:
 			raise NotImplementedError(f"Encoder for observation type {k} not implemented.")
 	return nn.ModuleDict(out)

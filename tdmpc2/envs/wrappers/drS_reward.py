@@ -1,5 +1,4 @@
-import gym
-import gym.envs
+import gymnasium as gym
 import numpy as np
 import torch
 import torch.nn as nn
@@ -85,3 +84,6 @@ class DrsRewardWrapper(gym.Wrapper):
         reward = self.disc.get_reward(self._obs_to_tensor(next_obs).unsqueeze(0), info['success'])
         reward = reward.item()
         return next_obs, reward, done, info
+    
+    def render(self, *args, **kwargs):
+        return self.env.render(*args, **kwargs)

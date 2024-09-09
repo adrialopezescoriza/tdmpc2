@@ -2,8 +2,9 @@ defaults:
     - override hydra/launcher: submitit_local
 
 # environment
-task: dog-run
+task: stack-cube
 obs: state
+num_envs: 16
 
 # evaluation
 checkpoint: ???
@@ -11,8 +12,10 @@ eval_episodes: 10
 eval_freq: 50000
 
 # training
+algorithm: ???
 steps: 10_000_000
 batch_size: 256
+steps_per_update: 4 # utd = steps_per_update / num_envs (in this implementation)
 reward_coef: 0.1
 value_coef: 0.1
 consistency_coef: 20
@@ -66,8 +69,9 @@ simnorm_dim: 8
 wandb_project: tdmpc2-drS
 wandb_entity: alopez
 wandb_silent: true
-disable_wandb: false
+disable_wandb: true
 save_csv: false
+save_freq: 1_000_000
 
 # drS
 drS_ckpt: ???
@@ -90,3 +94,20 @@ action_dims: ???
 episode_lengths: ???
 seed_steps: ???
 bin_size: ???
+
+# environments
+maniskill:
+    action_repeat: 2
+    obs_keys: ["agent", "image"]
+    max_episode_steps: 100
+    camera:
+        image_size: 128 # 64, 128, 256
+
+metaworld:
+    action_repeat: 2
+    max_episode_steps: 100
+    render_mode: "rgb_array" # "human", "rgb_array"
+    reward_mode: ???
+    obs: ???
+    camera:
+        image_size: 224 # 64, 128, 256

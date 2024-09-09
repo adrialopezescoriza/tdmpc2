@@ -8,6 +8,7 @@ wandb/
 
 # HPC
 nautilus/*.yaml
+nautilus/*.sh
 *.key
 
 # Checkpoints
@@ -136,3 +137,9 @@ dmypy.json
 
 # Text editors
 .vscode
+
+# Datasets
+demo_data/
+
+# Other
+custom_scripts/

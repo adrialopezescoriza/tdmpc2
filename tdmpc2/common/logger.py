@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from termcolor import colored
 from omegaconf import OmegaConf
+from functools import wraps
+import time
 
 from common import TASK_SET
 
@@ -13,9 +15,11 @@ CONSOLE_FORMAT = [
 	("iteration", "I", "int"),
 	("episode", "E", "int"),
 	("step", "I", "int"),
-	("episode_reward", "R", "float"),
-	("episode_success", "S", "float"),
+	("episode_reward", "R", "float1"),
+	("episode_max_reward", "MAX_R", "float1"),
+	("episode_success", "S", "float1"),
 	("total_time", "T", "time"),
+	("bc_loss", "BC_L", "float3")
 ]
 
 CAT_TO_COLOR = {
@@ -32,6 +36,18 @@ def make_dir(dir_path):
 	except OSError:
 		pass
 	return dir_path
+
+def timeit(func):
+    @wraps(func)
+    def timeit_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        total_time = end_time - start_time
+        # first item in the args, ie `args[0]` is `self`
+        print(f'Function {func.__name__} Took {total_time:.4f} seconds')
+        return result
+    return timeit_wrapper
 
 
 def print_run(cfg):
@@ -56,6 +72,7 @@ def print_run(cfg):
 		("observations", observations),
 		("actions", cfg.action_dim),
 		("experiment", cfg.exp_name),
+		("algorithm", cfg.algorithm),
 	]
 	w = np.max([len(_limstr(str(kv[1]))) for kv in kvs]) + 25
 	div = "-" * w
@@ -92,13 +109,22 @@ class VideoRecorder:
 
 	def record(self, env):
 		if self.enabled:
-			self.frames.append(env.render())
+			obs = env.get_obs()
+			frame = None
+			if hasattr(obs, "keys"):
+				for k, v in obs.items():
+					if k.startswith('rgb'):
+						frame_ = v[0].permute(1,2,0).cpu().numpy()
+						frame = frame_ if frame is None else np.concatenate((frame, frame_), axis=1)
+			if frame is None:
+				frame = env.render()
+			self.frames.append(frame)
 
-	def save(self, step, key='videos/eval_video'):
+	def save(self, step_key, step, key='videos/eval_video'):
 		if self.enabled and len(self.frames) > 0:
 			frames = np.stack(self.frames)
 			return self._wandb.log(
-				{key: self._wandb.Video(frames.transpose(0, 3, 1, 2), fps=self.fps, format='mp4')}, step=step
+				{key: self._wandb.Video(frames.transpose(0, 3, 1, 2), fps=self.fps, format='mp4'), step_key: step}
 			)
 
 
@@ -113,7 +139,6 @@ class Logger:
 		self._group = cfg_to_group(cfg)
 		self._seed = cfg.seed
 		self._eval = []
-		print_run(cfg)
 		self.project = cfg.get("wandb_project", "none")
 		self.entity = cfg.get("wandb_entity", "none")
 		if cfg.disable_wandb or self.project == "none" or self.entity == "none":
@@ -135,6 +160,14 @@ class Logger:
 			dir=self._log_dir,
 			config=OmegaConf.to_container(cfg, resolve=True),
 		)
+
+		# Define x-axis for each metric
+		wandb.define_metric("train/*", step_metric="train/step")
+		wandb.define_metric("eval/*", step_metric="eval/step")
+		wandb.define_metric("videos/eval_video", step_metric="eval/step")
+		wandb.define_metric("pretrain/*", step_metric="pretrain/iteration")
+		wandb.define_metric("videos/pretrain_video", step_metric="pretrain/iteration")
+
 		print(colored("Logs will be synced with wandb.", "blue", attrs=["bold"]))
 		self._wandb = wandb
 		self._video = (
@@ -142,6 +175,8 @@ class Logger:
 			if self._wandb and cfg.save_video
 			else None
 		)
+
+		print_run(cfg)
 
 	@property
 	def video(self):
@@ -174,8 +209,12 @@ class Logger:
 	def _format(self, key, value, ty):
 		if ty == "int":
 			return f'{colored(key+":", "blue")} {int(value):,}'
-		elif ty == "float":
+		elif ty == "float1":
 			return f'{colored(key+":", "blue")} {value:.01f}'
+		elif ty == "float2":
+			return f'{colored(key+":", "blue")} {value:.02f}'
+		elif ty == "float3":
+			return f'{colored(key+":", "blue")} {value:.03f}'
 		elif ty == "time":
 			value = str(datetime.timedelta(seconds=int(value)))
 			return f'{colored(key+":", "blue")} {value}'
@@ -223,14 +262,10 @@ class Logger:
 	def log(self, d, category="train"):
 		assert category in CAT_TO_COLOR.keys(), f"invalid category: {category}"
 		if self._wandb:
-			if category in {"train", "eval"}:
-				xkey = "step"
-			elif category == "pretrain":
-				xkey = "iteration"
 			_d = dict()
 			for k, v in d.items():
 				_d[category + "/" + k] = v
-			self._wandb.log(_d, step=d[xkey])
+			self._wandb.log(_d)
 		if category == "eval" and self._save_csv:
 			keys = ["step", "episode_reward"]
 			self._eval.append(np.array([d[keys[0]], d[keys[1]]]))

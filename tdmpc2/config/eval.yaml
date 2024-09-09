@@ -1,0 +1,23 @@
+defaults:
+    - tdmpc2
+    - _self_
+
+# environment
+task: peg-insertion-semi
+obs: state
+obs_save: rgbd
+num_envs: 32
+sim_backend: gpu
+
+# evaluation
+checkpoint: /home/adria/tdmpc2/ckpt/ManiSkill3/tdmpc/PegInsertionSide.pt
+eval_episodes: 200
+
+# saving
+save_trajectory: true
+success_only: true
+log_path: .
+save_video: true
+
+# misc
+multitask: false

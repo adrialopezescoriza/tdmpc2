@@ -2,19 +2,26 @@ from time import time
 
 import numpy as np
 import torch
+from math import ceil
+from termcolor import colored
 from tensordict.tensordict import TensorDict
+from copy import deepcopy
 
 from trainer.base import Trainer
 
-
-class OnlineTrainer(Trainer):
-	"""Trainer class for single-task online TD-MPC2 training."""
+class ModemTrainer(Trainer):
+	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+
 		self._step = 0
+		self._pretrain_step = 0
 		self._ep_idx = 0
 		self._start_time = time()
+		
+		print('Agent Architecture:', self.agent.model)
+		print("Learnable parameters: {:,}".format(self.agent.model.total_params))
 
 	def common_metrics(self):
 		"""Return a dictionary of current metrics."""
@@ -24,15 +31,15 @@ class OnlineTrainer(Trainer):
 			total_time=time() - self._start_time,
 		)
 
-	def eval(self):
+	def eval(self, pretrain=False):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards = [], []
+		ep_rewards, ep_max_rewards, ep_successes = [], [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
 			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
-				action = self.agent.act(obs, t0=t==0, eval_mode=True)
+				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
 				ep_max_reward = torch.maximum(ep_max_reward, reward) if ep_max_reward is not None else reward
@@ -42,14 +49,18 @@ class OnlineTrainer(Trainer):
 			assert done.all(), 'Vectorized environments must reset all environments at once.'
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
+			ep_successes.append(info['success'].float().mean())
 
 		if self.cfg.save_video:
-			self.logger.video.save("eval/step", self._step)
+			if pretrain:
+				self.logger.video.save("pretrain/iteration", self._pretrain_step, key='videos/pretrain_video')
+			else:
+				self.logger.video.save("eval/step", self._step)
 		
 		return dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
-			episode_success=info['success'].float().mean(),
+			episode_success=torch.stack(ep_successes).mean(),
 		)
 
 	def to_td(self, obs, action=None, reward=None, device='cpu'):
@@ -68,19 +79,54 @@ class OnlineTrainer(Trainer):
 			reward=reward.unsqueeze(0),
 		), batch_size=(1, self.cfg.num_envs,))
 		return td.to(torch.device(device))
+	
+	def pretrain(self):
+		"""Pretrains agent policy with demonstration data"""
+		demo_buffer = self.buffer._offline_buffer
+		n_iterations = ceil(demo_buffer.n_elements / demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		start_time = time()
+		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
+
+		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
+
+		self.agent.model.train()
+		for self._pretrain_step in range (n_iterations):
+			metrics = self.agent.init_bc(demo_buffer)
+
+			if self._pretrain_step % self.cfg.pretrain.eval_freq == 0:
+				eval_metrics = self.eval(pretrain=True)
+				eval_metrics.update({"iteration": self._pretrain_step})
+				self.logger.log(eval_metrics, category="pretrain")
+
+				if eval_metrics["episode_reward"] > best_score:
+					best_model = deepcopy(self.agent.model.state_dict())
+					best_score = eval_metrics["episode_reward"]
+			
+			if self._pretrain_step % self.cfg.pretrain.log_freq == 0:
+				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
+				self.logger.log(metrics, category="pretrain")
+		self.agent.model.eval()
+		self.agent.model.load_state_dict(best_model)
 
 	def train(self):
-		"""Train a TD-MPC2 agent."""
+		"""Train agent"""
+
+		# Policy pretraining
+		if self.cfg.get("policy_pretraining", False):
+			self.pretrain()
+
+		# Start interactive training
+		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
 		train_metrics, done, eval_next = {}, torch.tensor(True), True
 		while self._step <= self.cfg.steps:
 
 			# Evaluate agent periodically
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
-			
-			# Save agent periodically
+
+			# Save Agent periodically
 			if self._step % self.cfg.save_freq == 0 and self._step > 0:
-					print("Saving agent and discriminator checkpoints...")
+					print("Saving agent checkpoint...")
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
 
 			# Reset environment
@@ -94,6 +140,7 @@ class OnlineTrainer(Trainer):
 
 				if self._step > 0:
 					tds = torch.cat(self._tds)
+					self._ep_idx = self.buffer.add(tds)
 					train_metrics.update(
 						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
 						episode_max_reward=np.nanmax(tds['reward'], axis=0).max(),
@@ -101,7 +148,6 @@ class OnlineTrainer(Trainer):
 					)
 					train_metrics.update(self.common_metrics())
 					self.logger.log(train_metrics, 'train')
-					self._ep_idx = self.buffer.add(tds)
 
 				obs = self.env.reset()
 				self._tds = [self.to_td(obs, device='cpu')]
@@ -109,21 +155,24 @@ class OnlineTrainer(Trainer):
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
 				action = self.agent.act(obs, t0=len(self._tds)==1)
+			elif self.cfg.get("policy_pretraining", False):
+				action = self.agent.policy_action(obs, eval_mode=True)
 			else:
 				action = self.env.rand_act()
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward, device='cpu'))
-
+			
 			# Update agent
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
-					num_updates = int(self.cfg.seed_steps / self.cfg.steps_per_update)
-					print('Pretraining agent on seed data...')
+					num_updates = max(1, int(self.cfg.seed_steps / self.cfg.steps_per_update))
+					print(colored("\nTraining TDMPC Agent", "green", attrs=["bold"]))
+					print(f'Pretraining agent with {num_updates} update steps on seed data...')
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
-					_train_metrics = self.agent.update(self.buffer)
-				train_metrics.update(_train_metrics)
+					agent_train_metrics = self.agent.update(self.buffer)
+				train_metrics.update(agent_train_metrics)
 
 			self._step += self.cfg.num_envs
 	

@@ -1,4 +1,4 @@
-name: tdmpc2
+name: modem-drS
 channels:
   - pytorch-nightly
   - nvidia
@@ -48,19 +48,11 @@ dependencies:
     - wandb==0.16.2
     - wheel==0.38.0
     ####################
-    # Gym:
-    # (unmaintained but required for maniskill2/meta-world/myosuite)
-    # - gym==0.21.0
+    # ManiSkill3 (uses gymnasium):
+    # pip install --upgrade git+https://github.com/haosulab/ManiSkill.git@334fadfd417abcbf1f39c997a1d6715e0167b54f
     ####################
-    # ManiSkill2:
-    # (requires gym==0.21.0 which occasionally breaks)
-    # - mani-skill2==0.4.1
+
     ####################
-    # Meta-World:
-    # (requires gym==0.21.0 which occasionally breaks)
-    # - git+https://github.com/Farama-Foundation/Metaworld.git@04be337a12305e393c0caf0cbf5ec7755c7c8feb
-    ####################
-    # MyoSuite:
-    # (requires gym==0.13 which conflicts with meta-world / mani-skill2)
-    # - myosuite
+    # MetaWorld:
+    # pip install git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba
     ####################
