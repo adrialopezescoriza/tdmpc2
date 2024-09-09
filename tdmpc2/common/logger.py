@@ -7,6 +7,7 @@ from termcolor import colored
 from omegaconf import OmegaConf
 from functools import wraps
 import time
+import cv2
 
 from common import TASK_SET
 
@@ -107,6 +108,18 @@ class VideoRecorder:
 		self.enabled = self._save_dir and self._wandb and enabled
 		self.record(env)
 
+	def _add_reward_text(self, frame, reward):
+		font = cv2.FONT_HERSHEY_SIMPLEX
+		text = f"R: {reward:.2f}"  # Format reward to 2 decimal places
+		position = (10, 30)  # Top-left corner (x, y)
+		font_scale = 0.5
+		color = (255, 255, 0)  # Yellow in RGB
+		thickness = 1
+		line_type = cv2.LINE_AA
+		# Add the text to the frame
+		frame_with_text = cv2.putText(frame.copy(), text, position, font, font_scale, color, thickness, line_type)
+		return frame_with_text
+
 	def record(self, env):
 		if self.enabled:
 			obs = env.get_obs()
@@ -118,6 +131,7 @@ class VideoRecorder:
 						frame = frame_ if frame is None else np.concatenate((frame, frame_), axis=1)
 			if frame is None:
 				frame = env.render()
+			frame = self._add_reward_text(frame, env.reward()[0].item())
 			self.frames.append(frame)
 
 	def save(self, step_key, step, key='videos/eval_video'):

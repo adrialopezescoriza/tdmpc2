@@ -10,10 +10,6 @@ def missing_dependencies(task):
 	raise ValueError(f'Missing dependencies for task {task}; install dependencies to use this environment.')
 
 try:
-	from envs.dmcontrol import make_env as make_dm_control_env
-except:
-	make_dm_control_env = missing_dependencies
-try:
 	from envs.maniskill import make_env as make_maniskill_env
 except:
 	make_maniskill_env = missing_dependencies

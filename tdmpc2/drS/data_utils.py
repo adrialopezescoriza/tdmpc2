@@ -68,7 +68,7 @@ def load_dataset_as_td(path, num_traj=None, success_only=False):
         tds.append(TensorDict(dict(
             obs=episode_to_tensor(traj['next_observations' if 'next_observations' in traj.keys() else 'observations']),
             reward=torch.tensor(traj['rewards']),
-            action=episode_to_tensor(traj['actions']),
+            action=episode_to_tensor(traj['actions']).float(),
             stage=torch.ones(len(traj['rewards']), dtype=torch.int64) * max(traj['rewards']),
         ), batch_size=(len(traj['rewards']),)))
 

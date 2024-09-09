@@ -27,9 +27,11 @@ class MetaWorldRewardWrapper(gym.Wrapper):
             self.reward_mode = SUPPORTED_REWARD_MODES[0]
         else:
             self.reward_mode = cfg.reward_mode
+        self._info = {}
 
     def step(self, action: npt.NDArray[np.float32]):
         obs, rew, termindated, truncated, info = self.env.step(action)
+        self._info = info
         if self.reward_mode == "sparse":
             rew  = float(info["success"])
         elif self.reward_mode == "dense":
@@ -42,6 +44,9 @@ class MetaWorldRewardWrapper(gym.Wrapper):
 
     def compute_stage_indicator(self):
         raise NotImplementedError()
+    
+    def reward(self, *args, **kwargs):
+        return self.compute_semi_sparse_reward(self._info)
         
     def compute_semi_sparse_reward(self, info):
         stage_indicators = self.compute_stage_indicator(info)

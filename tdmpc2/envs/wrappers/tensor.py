@@ -14,7 +14,7 @@ class TensorWrapper(gym.Wrapper):
 		super().__init__(env)
 		self._wrapped_vectorized = env.__class__.__name__ == 'Vectorized'
 		self.max_episode_steps = env.max_episode_steps
-		self.num_envs = env.num_envs
+		self.num_envs = env.num_envs if self._wrapped_vectorized else 1
 
 	def rand_act(self):
 		return self.env.rand_act()
@@ -29,7 +29,7 @@ class TensorWrapper(gym.Wrapper):
 		if isinstance(obs, dict):
 			for k in obs.keys():
 				obs[k] = self._try_f32_tensor(obs[k])
-			obs = TensorDict(obs, batch_size=self.num_envs)
+			obs = TensorDict(obs, batch_size=self.num_envs if self.num_envs > 1 else ())
 		else:
 			obs = self._try_f32_tensor(obs)
 		return obs
@@ -56,3 +56,6 @@ class TensorWrapper(gym.Wrapper):
 	
 	def get_obs(self, *args, **kwargs):
 		return self._obs_to_tensor(self.env.get_obs(*args, **kwargs))
+	
+	def reward(self, *args, **kwargs):
+		return torch.tensor(self.env.reward(*args, **kwargs), dtype=torch.float32)

@@ -3,7 +3,7 @@ import gymnasium as gym
 
 from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE
 from envs.wrappers.vectorized import Vectorized
-from envs.wrappers.mw_stages import getRewardWrapper
+from envs.tasks.mw_stages import getRewardWrapper
 
 from envs.utils import convert_observation_to_space
 

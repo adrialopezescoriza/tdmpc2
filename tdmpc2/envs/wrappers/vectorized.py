@@ -21,8 +21,8 @@ class Vectorized(gym.Wrapper):
 			_cfg.seed = cfg.seed + np.random.randint(1000)
 			return env_fn(_cfg)
 
-		print(f'Creating {cfg.num_envs} environments...')
 		self.env = AsyncVectorEnv([make for _ in range(cfg.num_envs)])
+		print(f'Created {cfg.num_envs} environments...')
 		env = make()
 
 		self.observation_space = env.observation_space
@@ -59,5 +59,8 @@ class Vectorized(gym.Wrapper):
 			return {k: np.stack([dic[k] for dic in obs], axis=0) for k in obs[0]}
 		return np.stack(obs,axis=0)
 	
+	def reward(self):
+		return self.env.call("reward")
+
 	def get_state(self):
 		return self.env.call("get_state")

@@ -6,7 +6,7 @@ from envs.wrappers.drS_reward import DrsRewardWrapper
 from mani_skill.utils.common import flatten_state_dict
 
 import mani_skill.envs
-import envs.tasks.envs_with_stage_indicators
+import envs.tasks.maniskill_stages
 
 
 MANISKILL_TASKS = {
@@ -164,6 +164,9 @@ class ManiSkillWrapper(gym.Wrapper):
 		self._t += 1
 		done = torch.tensor([self._t >= self.max_episode_steps] * self.num_envs)
 		return obs, reward, terminated, done, info
+	
+	def reward(self, **kwargs):
+		return self.env.get_reward(**kwargs)
 	
 	def get_obs(self, *args, **kwargs):
 		return select_obs(self.obs_keys, self.env.get_obs())
