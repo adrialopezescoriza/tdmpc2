@@ -36,6 +36,9 @@ class PandaWristCamPegCustom(PandaWristCam):
 class DrS_BaseEnv(BaseEnv):
     SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse", "drS")
 
+    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
+    agent: Union[PandaWristCam, PandaWristCamPegCustom]
+
     def compute_stage_indicator(self):
         raise NotImplementedError()
     
@@ -99,7 +102,7 @@ from mani_skill.envs.tasks.tabletop.stack_cube import StackCubeEnv
 class StackCube_DrS_learn(DrS_BaseEnv, StackCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
 
     def compute_stage_indicator(self):
         eval_info = self.evaluate()
@@ -148,7 +151,7 @@ class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
     def _default_sensor_configs(self):
         # Define all the cameras needed for the environment
         pose_ext = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4]) # NOTE: Same as render camera
-        pose_base = sapien_utils.look_at([0, -0.3, 0.2], [0, 0, 0.1])
+        pose_base = sapien_utils.look_at([0, -0.4, 0.2], [0, 0, 0.1])
         return [
             CameraConfig("base_camera", pose=pose_base, width=128, height=128, fov=np.pi / 2, near=0.01, far=100),
             CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
@@ -165,7 +168,7 @@ from mani_skill.utils.geometry import rotation_conversions
 class LiftPegUpright_DrS_learn(DrS_BaseEnv, LiftPegUprightEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
 
     def evaluate(self):
         q = self.peg.pose.q
@@ -240,7 +243,7 @@ from mani_skill.utils.geometry import rotation_conversions
 class PokeCube_DrS_learn(DrS_BaseEnv, PokeCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
 
     def compute_stage_indicator(self):
         eval_info = self.evaluate()
