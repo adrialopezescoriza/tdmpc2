@@ -124,7 +124,7 @@ class VideoRecorder:
 		if self.enabled:
 			obs = env.get_obs()
 			frame = None
-			if hasattr(obs, "keys"):
+			if hasattr(obs, "keys") and self.cfg.render_obs:
 				for k, v in obs.items():
 					if k.startswith('rgb'):
 						frame_ = v[0].permute(1,2,0).cpu().numpy()

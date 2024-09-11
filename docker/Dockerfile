@@ -63,10 +63,13 @@ RUN mkdir -p /root/.mujoco && \
     python -c "import mujoco_py"
 
 # maniskill
-RUN pip install --upgrade git+https://github.com/haosulab/ManiSkill.git@334fadfd417abcbf1f39c997a1d6715e0167b54f
+RUN pip install --upgrade git+https://github.com/haosulab/ManiSkill.git
 
 # metaworld
 RUN pip install git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba
+
+# Bigym
+RUN pip install git+https://github.com/chernyadev/bigym.git
 
 # success!
 RUN echo "Successfully built Modem-DrS Docker image!"

@@ -29,7 +29,7 @@ class TensorWrapper(gym.Wrapper):
 		if isinstance(obs, dict):
 			for k in obs.keys():
 				obs[k] = self._try_f32_tensor(obs[k])
-			obs = TensorDict(obs, batch_size=self.num_envs if self.num_envs > 1 else ())
+			obs = TensorDict(obs, batch_size=self.num_envs)
 		else:
 			obs = self._try_f32_tensor(obs)
 		return obs

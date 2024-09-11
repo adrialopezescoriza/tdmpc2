@@ -1,6 +1,6 @@
 import os
-os.environ['MUJOCO_GL'] = 'osmesa'
-
+os.environ['MUJOCO_GL'] = 'egl'
+os.environ['LAZY_LEGACY_OP'] = '0'
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -18,7 +18,23 @@ from common.trajectory_saver import BaseTrajectorySaver
 from envs import make_env
 from tdmpc2 import TDMPC2
 
+import cv2
+# TODO: This is needed for mujoco not to crash. Unknown reason??
+import torchrl
+
 torch.backends.cudnn.benchmark = True
+
+def add_text(frame, reward):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    text = f"R: {reward:.2f}"  # Format reward to 2 decimal places
+    position = (10, 30)  # Top-left corner (x, y)
+    font_scale = 0.5
+    color = (255, 255, 0)  # Yellow in RGB
+    thickness = 1
+    line_type = cv2.LINE_AA
+    # Add the text to the frame
+    frame_with_text = cv2.putText(frame.copy(), text, position, font, font_scale, color, thickness, line_type)
+    return frame_with_text
 
 class ObservationConverter(object):
 	
@@ -28,6 +44,8 @@ class ObservationConverter(object):
 		self.obs_type = cfg.obs_save
 		if cfg.task.startswith("mw"):
 			self.env_type = "metaworld"
+		elif cfg.task.startswith("bigym"):
+			self.env_type = "bigym"
 		else:
 			self.env_type = "maniskill"
 			if self.obs_flag:
@@ -41,8 +59,8 @@ class ObservationConverter(object):
 			return self.env_obs.get_obs()
 		return env.get_obs(self.obs_type)
 	
-	def get_frame(self, env, obs):
-		if hasattr(obs, "keys"):
+	def get_frame(self, env, obs, render_obs=True):
+		if hasattr(obs, "keys") and render_obs:
 			frame = None
 			for k, v in obs.items():
 				if k.startswith('rgb'):
@@ -126,7 +144,7 @@ def evaluate(cfg: dict):
 				obs, done, ep_reward, t = env.reset(task_idx=task_idx, seed=seed), torch.tensor(False), 0, 0
 				obs_save = obs_converter.reset(task_idx, seed, env)
 				if cfg.save_video:
-					frames = [obs_converter.get_frame(env, obs_save)]
+					frames = [add_text(obs_converter.get_frame(env, obs_save, cfg.render_obs), 0)]
 				while not done.all():
 					prev_obs_save = deepcopy(obs_save)
 					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True).to(obs.device)
@@ -135,7 +153,7 @@ def evaluate(cfg: dict):
 					ep_reward += reward
 					t += 1
 					if cfg.save_video:
-						frames.append(obs_converter.get_frame(env, obs_save))
+						frames.append(add_text(obs_converter.get_frame(env, obs_save, cfg.render_obs), reward[0]))
 					if cfg.save_trajectory:
 						terminated = done # Only terminate when truncated
 						info = {k: v.cpu() for k,v in info.items()}

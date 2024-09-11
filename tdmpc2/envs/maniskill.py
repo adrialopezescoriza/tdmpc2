@@ -152,7 +152,7 @@ class ManiSkillWrapper(gym.Wrapper):
 
 	def reset(self, seed=None):
 		self._t = 0
-		obs, info = self.env.reset(seed=seed)
+		obs, info = self.env.reset(seed=seed, options=None)
 		return (select_obs(self.obs_keys, obs) if isinstance(obs, dict) else obs), info
 	
 	def step(self, action):
@@ -166,7 +166,7 @@ class ManiSkillWrapper(gym.Wrapper):
 		return obs, reward, terminated, done, info
 	
 	def reward(self, **kwargs):
-		return self.env.get_reward(**kwargs)
+		return self.env.get_reward(obs=self.env.get_obs(), action=self.env.action_space.sample(), info=self.env.get_info())
 	
 	def get_obs(self, *args, **kwargs):
 		return select_obs(self.obs_keys, self.env.get_obs())

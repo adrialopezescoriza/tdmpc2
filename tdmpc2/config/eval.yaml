@@ -20,4 +20,5 @@ log_path: .
 save_video: true
 
 # misc
+render_obs: False
 multitask: false

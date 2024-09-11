@@ -79,6 +79,7 @@ drS_ckpt: ???
 # misc
 save_video: true
 save_agent: true
+render_obs: false
 seed: 1
 
 # convenience
@@ -108,6 +109,13 @@ metaworld:
     max_episode_steps: 100
     render_mode: "rgb_array" # "human", "rgb_array"
     reward_mode: ???
+    obs: ???
+    camera:
+        image_size: 224 # 64, 128, 256
+
+bigym:
+    action_repeat: 1
+    render_mode: "rgb_array" # "human", "rgb_array"
     obs: ???
     camera:
         image_size: 224 # 64, 128, 256

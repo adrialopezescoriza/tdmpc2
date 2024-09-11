@@ -1,4 +1,4 @@
-name: modem-drS
+name: bigym
 channels:
   - pytorch-nightly
   - nvidia
@@ -9,7 +9,7 @@ dependencies:
   - glew=2.1.0
   - glib=2.68.4
   - pip=21.0
-  - python=3.9.0
+  - python==3.10.0
   - pytorch>=2.2.2
   - torchvision>=0.16.2
   - pip:
@@ -24,8 +24,7 @@ dependencies:
     - imageio-ffmpeg==0.4.9
     - kornia==0.7.1
     - moviepy==1.0.3
-    - mujoco==2.3.1
-    - mujoco-py==2.1.2.14
+    - mujoco
     - numpy==1.23.5
     - omegaconf==2.3.0
     - open3d==0.18.0
@@ -49,10 +48,15 @@ dependencies:
     - wheel==0.38.0
     ####################
     # ManiSkill3 (uses gymnasium):
-    # pip install --upgrade git+https://github.com/haosulab/ManiSkill.git@334fadfd417abcbf1f39c997a1d6715e0167b54f
+    # pip install --upgrade git+https://github.com/haosulab/ManiSkill.git
     ####################
 
     ####################
     # MetaWorld:
     # pip install git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba
+    ####################
+
+    ####################
+    # Bigym:
+    # pip install git+https://github.com/adrialopezescoriza/bigym.git
     ####################
