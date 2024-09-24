@@ -51,13 +51,12 @@ class Discriminator(nn.Module):
         disc_losses = []
         data = buffer.sample_for_disc(self._cfg.batch_size) # List of data from each buffer
         for stage_idx in range(self.n_stages):
-            try:
-                success_data = torch.cat([d for d in data[stage_idx+1:]], dim=0)[:self._cfg.batch_size]
-                success_data = success_data[torch.randperm(success_data.size(0))[:self._cfg.batch_size]] # shuffle and cut
-            except RuntimeError:
-                # Success data list is empty
-                break
-            fail_data = torch.cat([d for d in data[:stage_idx+1]], dim=0)
+            success_data = data[stage_idx]["success_data"]
+            if len(success_data) == 0:
+                continue
+            fail_data = data[stage_idx]["fail_data"]
+
+            success_data = success_data[torch.randperm(success_data.size(0))[:self._cfg.batch_size]] # shuffle and cut
             fail_data = fail_data[torch.randperm(fail_data.size(0))[:self._cfg.batch_size]] # shuffle and cut
 
             disc_next_obs = torch.cat([fail_data, success_data], dim=0)
@@ -82,9 +81,7 @@ class Discriminator(nn.Module):
             self.set_trained(stage_idx)
             disc_losses += [float(disc_loss.mean().item())]
 
-        return {
-            "discriminator_loss": np.mean(disc_losses),
-        }
+        return {"discriminator_loss": np.max(disc_losses)} if len(disc_losses) != 0 else {}
 
     def get_reward(self, next_s, stage_idx):
         '''

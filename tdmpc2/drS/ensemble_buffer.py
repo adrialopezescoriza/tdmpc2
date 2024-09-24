@@ -47,12 +47,19 @@ class EnsembleBuffer(Buffer):
 		tds = torch.cat([td0, td1], dim=0)
 
 		obs_return = []
-		for stage_index in range(self.cfg.n_stages + 1):
+		for stage_index in range(self.cfg.n_stages):
 			# Find indices where reward is equal to stage_index
-			stage_indices = (tds["stage"] == stage_index).nonzero(as_tuple=True)[0]
+			stage_indices = (tds["reward"] == stage_index).nonzero(as_tuple=True)[0]
+
+			# Success indices
+			success_indices = (tds["stage"][stage_indices] > stage_index).nonzero(as_tuple=True)[0]
+			fail_indices = (tds["stage"][stage_indices] <= stage_index).nonzero(as_tuple=True)[0]
+
+			# Cut at minimum to avoid data imbalance
+			success_indices = success_indices[:min(len(success_indices), len(fail_indices))]
+			fail_indices = fail_indices[:min(len(success_indices), len(fail_indices))]
 			
 			# Extract observations for those indices
-			stage_observations = tds["obs"][stage_indices]
-			obs_return.append(stage_observations)
+			obs_return.append({"success_data": tds["obs"][success_indices], "fail_data": tds["obs"][fail_indices]})
 		
 		return obs_return
