@@ -93,7 +93,7 @@ class PegInsertSide_DrS(MetaWorldRewardWrapper):
     
     def compute_stage_indicator(self, eval_info):
         return {
-            'is_grasped': float(eval_info['grasp_success'] or eval_info['success']),
+            'is_grasped': float(eval_info['grasp_reward']==1 or eval_info['success']),
             'success': float(eval_info['success'])
         }
     
@@ -103,12 +103,11 @@ class PegInsertSide_DrS(MetaWorldRewardWrapper):
 class StickPull_DrS(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.n_stages = 3
+        self.n_stages = 2
     
     def compute_stage_indicator(self, eval_info):
         return {
             'is_grasped': float(eval_info['grasp_success'] or eval_info['success']),
-            'in_place': float(np.floor(eval_info['in_place_reward']) or eval_info['success']),
             'success': float(eval_info['success'])
         }
     
@@ -118,12 +117,11 @@ class StickPull_DrS(MetaWorldRewardWrapper):
 class StickPush_DrS(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.n_stages = 3
+        self.n_stages = 2
     
     def compute_stage_indicator(self, eval_info):
         return {
             'is_grasped': float(eval_info['grasp_success'] or eval_info['success']),
-            'in_place': float(np.floor(eval_info['in_place_reward']) or eval_info['success']),
             'success': float(eval_info['success'])
         }
     

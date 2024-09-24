@@ -98,7 +98,8 @@ class DrsTrainer(Trainer):
 	def pretrain(self):
 		"""Pretrains agent policy with demonstration data"""
 		demo_buffer = self.buffer._offline_buffer
-		n_iterations = ceil(demo_buffer.n_elements / demo_buffer.batch_size) * self.cfg.pretrain.n_epochs
+		n_iterations = self.cfg.pretrain.n_epochs
+		self.cfg.pretrain.eval_freq = n_iterations // 25
 		start_time = time()
 		best_model, best_score = deepcopy(self.agent.model.state_dict()), 0
 

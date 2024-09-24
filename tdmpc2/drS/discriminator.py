@@ -81,7 +81,7 @@ class Discriminator(nn.Module):
             self.set_trained(stage_idx)
             disc_losses += [float(disc_loss.mean().item())]
 
-        return {"discriminator_loss": np.max(disc_losses)} if len(disc_losses) != 0 else {}
+        return {"discriminator_loss": np.mean(disc_losses)} if len(disc_losses) != 0 else {}
 
     def get_reward(self, next_s, stage_idx):
         '''

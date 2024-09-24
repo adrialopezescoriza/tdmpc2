@@ -27,6 +27,9 @@ class BiGymWrapper(gym.Wrapper):
 			else:
 				raise NotImplementedError
 		return processed
+	
+	def rand_act(self):
+		return self.action_space.sample().astype(np.float32)
 
 	def reset(self, **kwargs):
 		self._t = 0

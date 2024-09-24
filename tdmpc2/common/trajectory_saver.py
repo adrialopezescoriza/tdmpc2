@@ -41,14 +41,13 @@ class BaseTrajectorySaver(object):
         self.data_to_save = [] 
         self.max_traj = max_traj
 
-    def add_transition(self, obs, act, next_obs, rew, done, info):
+    def add_transition(self, act, next_obs, rew, done, info):
         '''
             Important: All args need to be in format List[np.array() or torch.Tensor()]
         '''
         for i in range(self.num_envs):
             if self.num_traj == self.max_traj:
                 break
-            self.traj[i]['observations'].append(obs[i])
             self.traj[i]['next_observations'].append(next_obs[i])
             self.traj[i]['actions'].append(act[i])
             self.traj[i]['rewards'].append(rew[i])

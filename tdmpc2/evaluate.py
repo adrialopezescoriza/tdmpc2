@@ -143,10 +143,17 @@ def evaluate(cfg: dict):
 				seed = np.random.RandomState().randint(2**32)
 				obs, done, ep_reward, t = env.reset(task_idx=task_idx, seed=seed), torch.tensor(False), 0, 0
 				obs_save = obs_converter.reset(task_idx, seed, env)
+				if cfg.save_trajectory:
+						saver.add_transition(
+							torch.full_like(env.rand_act(), float('nan')).cpu(),
+							obs_save.cpu(),
+							torch.tensor(float('nan')).repeat(cfg.num_envs).cpu(),
+							torch.tensor(False).repeat(cfg.num_envs).cpu(),
+							[{} for _ in range(cfg.num_envs)])
 				if cfg.save_video:
 					frames = [add_text(obs_converter.get_frame(env, obs_save, cfg.render_obs), 0)]
+				
 				while not done.all():
-					prev_obs_save = deepcopy(obs_save)
 					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True).to(obs.device)
 					obs, reward, done, info = env.step(action)
 					obs_save = obs_converter.get_obs(env)
@@ -158,7 +165,6 @@ def evaluate(cfg: dict):
 						terminated = done # Only terminate when truncated
 						info = {k: v.cpu() for k,v in info.items()}
 						saver.add_transition(
-							prev_obs_save.cpu(),
 							action.cpu(),
 							obs_save.cpu(),
 							reward.cpu(),
