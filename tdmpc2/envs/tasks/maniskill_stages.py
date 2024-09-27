@@ -18,15 +18,15 @@ class PandaWristCamPegCustom(PandaWristCam):
     @property
     def _sensor_configs(self):
         pose2 = sapien_utils.look_at([0.0, 0.0, 0.0], [0.0, 0.0, 0.4])
-        pose3 = sapien_utils.look_at([-0.4, 0.0, -0.4], [0.0, 0., 0.0])
+        pose3 = sapien_utils.look_at([0.0, 0.0, 0.0], [1.0, 0.0, 0.3])
         return [
             CameraConfig(
                 uid="hand_camera",
-                pose = sapien.Pose(p=[-0.05, 0.0, 0.03],
+                pose = sapien.Pose(p=[0, 0, 0],
                                    q=pose3.q),
                 width=128,
                 height=128,
-                fov=np.pi / 2,
+                fov=1.2 * np.pi / 2,
                 near=0.01,
                 far=10,
                 mount=self.robot.links_map["camera_link"],

@@ -1,3 +1,5 @@
+from common.seed import SeedScheduler
+
 class Trainer:
 	"""Base trainer class for TD-MPC2."""
 
@@ -7,6 +9,7 @@ class Trainer:
 		self.agent = agent
 		self.buffer = buffer
 		self.logger = logger
+		self.seed_scheduler = SeedScheduler(enable=cfg.seed_scheduler, num_envs=self.cfg.num_envs)
 		print('Architecture:', self.agent.model)
 		print("Learnable parameters: {:,}".format(self.agent.model.total_params))
 

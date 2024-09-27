@@ -54,7 +54,7 @@ class BaseTrajectorySaver(object):
             self.traj[i]['dones'].append(done[i])
             self.traj[i]['infos'].append(info[i])
             if done[i]:
-                if not self.success_only or info[i]['success']:
+                if (not self.success_only) or info[i]['success']:
                     self.data_to_save.append(self.traj[i])
                 self.traj[i] = {key: [] for key in self.KEYS}
     

@@ -30,9 +30,10 @@ class ModemTrainer(Trainer):
 
 	def eval(self, pretrain=False):
 		"""Evaluate agent."""
-		ep_rewards, ep_max_rewards, ep_successes = [], [], []
+		ep_rewards, ep_max_rewards, ep_successes, ep_seeds = [], [], [], []
 		for i in range(max(1, self.cfg.eval_episodes  // self.cfg.num_envs)):
-			obs, done, ep_reward, ep_max_reward, t = self.env.reset(), torch.tensor(False), 0, None, 0
+			seed = np.random.randint(2**31)
+			obs, done, ep_reward, ep_max_reward, t = self.env.reset(seed=seed), torch.tensor(False), 0, None, 0
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
@@ -47,6 +48,7 @@ class ModemTrainer(Trainer):
 			ep_rewards.append(ep_reward)
 			ep_max_rewards.append(ep_max_reward)
 			ep_successes.append(info['success'].float().mean())
+			ep_seeds.append(seed)
 
 		if self.cfg.save_video:
 			if pretrain:
@@ -58,6 +60,7 @@ class ModemTrainer(Trainer):
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
 			episode_success=torch.stack(ep_successes).mean(),
+			best_seed=ep_seeds[torch.argmax(torch.stack(ep_rewards).mean(dim=1)).item()] if pretrain else None,
 		)
 
 	def to_td(self, obs, action=None, reward=None, device='cpu'):
@@ -83,7 +86,7 @@ class ModemTrainer(Trainer):
 		n_iterations = self.cfg.pretrain.n_epochs
 		self.cfg.pretrain.eval_freq = n_iterations // 25
 		start_time = time()
-		best_model, best_score = deepcopy(self.agent.model.state_dict()), -np.inf
+		best_model, best_score = deepcopy(self.agent.model.state_dict()), 0
 
 		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
 
@@ -99,12 +102,19 @@ class ModemTrainer(Trainer):
 				if eval_metrics["episode_reward"] > best_score:
 					best_model = deepcopy(self.agent.model.state_dict())
 					best_score = eval_metrics["episode_reward"]
+					best_seed = eval_metrics["best_seed"]
 			
 			if self._pretrain_step % self.cfg.pretrain.log_freq == 0:
 				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
+		
+		if best_score == 0:
+			best_model = deepcopy(self.agent.model.state_dict())
+			best_seed = eval_metrics["best_seed"]
+		
 		self.agent.model.eval()
 		self.agent.model.load_state_dict(best_model)
+		self.seed_scheduler.start(init_seed=best_seed, max_seeds=1e4)
 
 	def train(self):
 		"""Train agent"""
@@ -146,8 +156,9 @@ class ModemTrainer(Trainer):
 					)
 					train_metrics.update(self.common_metrics())
 					self.logger.log(train_metrics, 'train')
+					self.seed_scheduler.step(train_metrics["episode_success"].item())
 
-				obs = self.env.reset()
+				obs = self.env.reset(seed=self.seed_scheduler.sample())
 				self._tds = [self.to_td(obs, device='cpu')]
 
 			# Collect experience

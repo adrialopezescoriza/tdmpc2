@@ -3,6 +3,7 @@ from bigym.envs.reach_target import ReachTarget
 from bigym.envs.manipulation import StackBlocks, FlipCup
 from bigym.envs.cupboards import DrawerTopOpen, WallCupboardOpen
 from bigym.envs.move_plates import MovePlate
+from bigym.envs.dishwasher import DishwasherCloseTrays
 from bigym.bigym_env import BiGymEnv, CONTROL_FREQUENCY_MAX, CONTROL_FREQUENCY_MIN
 # CONTROL_FREQUENCY_MAX (500Hz) = 40 * CONTROL_FREQUENCY_MIN(20Hz)
 
@@ -55,7 +56,7 @@ class BiGymStages(BiGymEnv):
 ########################################
 class WallCupboardOpenStages(BiGymStages, WallCupboardOpen):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
-        self.n_stages = 2
+        self.n_stages = 3
         self.reward_mode = "semi_sparse"
         self.max_episode_steps = 200
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ], absolute=True)
@@ -70,11 +71,37 @@ class WallCupboardOpenStages(BiGymStages, WallCupboardOpen):
         )
 
     def compute_stage_indicators(self):
-        is_cupboard_grasped = np.all([self.robot.is_gripper_holding_object(self.cabinet_wall, side) for side in self.robot.grippers])
+        is_cupboard_grasped_one_gripper = np.any([self.robot.is_gripper_holding_object(self.cabinet_wall, side) for side in self.robot.grippers])
+        is_cupboard_grasped_two_gripper = np.all([self.robot.is_gripper_holding_object(self.cabinet_wall, side) for side in self.robot.grippers])
         return {
-            "stage1": is_cupboard_grasped or self.success,
+            "stage1": is_cupboard_grasped_one_gripper or self.success,
+            "stage2": is_cupboard_grasped_two_gripper or self.success,
         }
 
+
+########################################
+######## DishWasher Close Trays ########
+########################################
+class DishwasherCloseTraysStages(BiGymStages, DishwasherCloseTrays):
+    def __init__(self, obs_mode, img_size, *args, **kwargs):
+        self.n_stages = 2
+        self.reward_mode = "semi_sparse"
+        self.max_episode_steps = 100
+        action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ])
+
+        super().__init__(
+            obs_mode=obs_mode,
+            img_size=img_size,
+            action_mode=action_mode,
+            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            *args, 
+            **kwargs,
+        )
+
+    def compute_stage_indicators(self):
+        return {
+            "stage1": np.isclose(self.dishwasher.get_state()[1:], 0, atol=self._TOLERANCE).any()
+        }
 
 
 ########################################
@@ -161,7 +188,7 @@ class FlipCupStages(BiGymStages, FlipCup):
 
     def compute_stage_indicators(self):
         is_cup_lifted = not self.cup.is_colliding(self.cabinet.counter)
-        is_cup_grasped = np.array([self.robot.is_gripper_holding_object(self.cup, side) for side in self.robot.grippers]).any()
+        is_cup_grasped = np.any([self.robot.is_gripper_holding_object(self.cup, side) for side in self.robot.grippers])
         is_cup_above_counter = self.cup.get_pose()[2] > self.cabinet.counter.get_position()[2]
 
         up = np.array([0, 0, 1])
@@ -202,38 +229,6 @@ class ReachTargetStages(BiGymStages, ReachTarget):
 
 # VERY HARD TASKS
 
-#############################
-####### Stack Blocks ########
-#############################
-class StackBlocksStages(BiGymStages, StackBlocks):
-    def __init__(self, obs_mode, img_size, *args, **kwargs):
-        self.n_stages = 4
-        self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 1000
-        action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ])
-
-        super().__init__(
-            obs_mode=obs_mode,
-            img_size=img_size,
-            action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN,
-            *args, 
-            **kwargs,
-        )
-
-    def compute_stage_indicators(self):
-        blocks_sorted = sorted(self.blocks, key=lambda b: b.body.get_position()[2])
-
-        block_1_stacked = blocks_sorted[0].is_colliding(self.target_collider)
-        block_2_stacked = blocks_sorted[1].is_colliding(blocks_sorted[0]) and block_1_stacked
-        block_3_stacked = blocks_sorted[2].is_colliding(blocks_sorted[1])
-        
-        return {
-            "stage_1": float(block_1_stacked),
-            "stage_2": float(block_2_stacked),
-            "stage_3": float(block_3_stacked),
-        }
-
 #########################
 ####### Pick Box ########
 #########################
@@ -241,14 +236,14 @@ class PickBoxStages(BiGymStages, PickBox):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 4
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 400
+        self.max_episode_steps = 200
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ])
 
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN,
+            control_frequency=CONTROL_FREQUENCY_MIN * 4,
             *args, 
             **kwargs,
         )
@@ -267,50 +262,14 @@ class PickBoxStages(BiGymStages, PickBox):
             "stage_3": float(is_object_above_counter or self.success),
         }
 
-#########################
-###### Store Box ########
-#########################
-class StoreBoxStages(BiGymStages, StoreBox):
-    def __init__(self, obs_mode, img_size, *args, **kwargs):
-        self.n_stages = 4
-        self.max_episode_steps = 500
-        self.reward_mode = "semi_sparse"
-        action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ])
-
-        super().__init__(
-            obs_mode=obs_mode,
-            img_size=img_size,
-            action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN,
-            *args, 
-            **kwargs,
-        )
-
-    def compute_stage_indicators(self):
-        box_pose = self.box.get_pose()
-        counter_pose = self.cabinet_base.counter.get_position()
-        shelf_pose = self.cabinet_base.shelf.get_position()
-
-        #is_cabinet_door_open = self.cabinet_base._DOOR_LEFT.
-        is_object_taken = (not self.box.is_colliding(self.floor)) and (not self.box.is_colliding(self.cabinet_base.counter))
-        is_object_lifted = shelf_pose[2] < box_pose[2] < counter_pose[2]
-        is_object_in_cabinet = np.allclose(box_pose[:2], shelf_pose[:2], atol=0.4) and is_object_lifted
-        
-        return {
-            "stage_2": float(is_object_taken or self.success),
-            "stage_3": float(is_object_lifted or self.success),
-            "stage_4": float(is_object_in_cabinet or self.success),
-        }
-
 SUPPORTED_TASKS = OrderedDict(
     (
-        ("reach-target-semi",       ReachTargetStages),
-        ("pick-box-semi",           PickBoxStages),
-        ("store-box-semi",          StoreBoxStages),
-        ("stack-blocks-semi",       StackBlocksStages),
-        ("flip-cup-semi",           FlipCupStages), 
-        ("drawer-top-open-semi",    DrawerTopOpenStages), 
-        ("move-plate-semi",         MovePlateStages), 
-        ("wall-cupboard-open-semi", WallCupboardOpenStages),              
+        ("reach-target-semi",           ReachTargetStages),
+        ("pick-box-semi",               PickBoxStages),
+        ("flip-cup-semi",               FlipCupStages), 
+        ("drawer-top-open-semi",        DrawerTopOpenStages), 
+        ("move-plate-semi",             MovePlateStages), 
+        ("wall-cupboard-open-semi",     WallCupboardOpenStages), 
+        ("dishwasher-close-trays-semi", DishwasherCloseTraysStages),              
     )
 )

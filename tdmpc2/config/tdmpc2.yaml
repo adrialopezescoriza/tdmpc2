@@ -31,6 +31,7 @@ discount_hardcoded: 0.0 # Overrides heuristic discount calculation
 buffer_size: 1_000_000
 exp_name: default
 data_dir: ???
+seed_scheduler: true
 
 # planning
 mpc: true

@@ -74,6 +74,8 @@ def train(cfg: dict):
 		cfg.algorithm = "TDMPC"
 		trainer_cls = OfflineTrainer if cfg.multitask else OnlineTrainer
 		buffer_cls = Buffer
+	
+	buffer_ = buffer_cls(cfg)
 	logger_ = Logger(cfg)
 
 	# Training code
@@ -81,7 +83,7 @@ def train(cfg: dict):
 		cfg=cfg,
 		env=env_,
 		agent=TDMPC2(cfg),
-		buffer=buffer_cls(cfg),
+		buffer=buffer_,
 		logger=logger_,
 	)
 	trainer.train()

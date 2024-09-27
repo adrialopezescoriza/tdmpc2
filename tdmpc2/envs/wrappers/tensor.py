@@ -14,7 +14,7 @@ class TensorWrapper(gym.Wrapper):
 		super().__init__(env)
 		self.max_episode_steps = env.max_episode_steps
 		self.num_envs = env.num_envs if hasattr(env,"num_envs") else 1
-		self._wrapped_vectorized = env.__class__.__name__ == 'Vectorized' or self.num_envs > 1
+		self._wrapped_vectorized = hasattr(env,"num_envs")
 
 	def rand_act(self):
 		return self._try_f32_tensor(self.env.rand_act())

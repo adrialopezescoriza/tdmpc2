@@ -103,7 +103,8 @@ class OnlineTrainer(Trainer):
 					self.logger.log(train_metrics, 'train')
 					self._ep_idx = self.buffer.add(tds)
 
-				obs = self.env.reset()
+					self.seed_scheduler.step(train_metrics["episode_success"].item())
+				obs = self.env.reset(seed=self.seed_scheduler.sample())
 				self._tds = [self.to_td(obs, device='cpu')]
 
 			# Collect experience
