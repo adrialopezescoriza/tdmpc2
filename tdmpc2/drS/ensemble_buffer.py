@@ -49,12 +49,9 @@ class EnsembleBuffer(Buffer):
 
 		obs_return = []
 		for stage_index in range(self.cfg.n_stages):
-			# Find indices where reward is equal to stage_index
-			stage_indices = (tds["reward"] == stage_index).nonzero(as_tuple=True)[0]
-
 			# Success indices
-			success_indices = (tds["stage"][stage_indices] > stage_index).nonzero(as_tuple=True)[0]
-			fail_indices = (tds["stage"][stage_indices] <= stage_index).nonzero(as_tuple=True)[0]
+			success_indices = ((tds["reward"] == stage_index) * (tds["stage"] > stage_index)).nonzero(as_tuple=True)[0]
+			fail_indices = ((tds["reward"] == stage_index) * (tds["stage"] <= stage_index)).nonzero(as_tuple=True)[0]
 
 			# Cut at minimum to avoid data imbalance
 			success_indices = success_indices[:min(len(success_indices), len(fail_indices))]
