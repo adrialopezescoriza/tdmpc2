@@ -168,19 +168,48 @@ from mani_skill.utils.geometry import rotation_conversions
 class LiftPegUpright_DrS_learn(DrS_BaseEnv, LiftPegUprightEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
 
+    def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
+        super()._initialize_episode(env_idx, options)
+        b = len(env_idx)
+        qpos = np.array(
+                [
+                    0.0,
+                    np.pi / 8,
+                    0,
+                    -np.pi * 5 / 8,
+                    0,
+                    np.pi * 3 / 4,
+                    np.pi / 4,
+                    0.04,
+                    0.04,
+                ]
+            )
+        qpos = (
+            self._episode_rng.normal(
+                0, self.robot_init_qpos_noise, (b, len(qpos))
+            )
+            + qpos
+        )
+        qpos[:, -2:] = 0.04
+        self.agent.reset(qpos)
+        self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
+    
     def evaluate(self):
         q = self.peg.pose.q
         qmat = rotation_conversions.quaternion_to_matrix(q)
         euler = rotation_conversions.matrix_to_euler_angles(qmat, "XYZ")
+        is_peg_half_turn = (
+            torch.abs(torch.abs(euler[:, 2]) - np.pi / 2) < 0.52
+        )  # 0.08 radians of difference permitted
         is_peg_upright = (
             torch.abs(torch.abs(euler[:, 2]) - np.pi / 2) < 0.08
         )  # 0.08 radians of difference permitted
         close_to_table = torch.abs(self.peg.pose.p[:, 2] - self.peg_half_length) < 0.005
         return {
             "is_peg_grasped": self.agent.is_grasping(self.peg),
-            "is_peg_upright": is_peg_upright,
+            "is_peg_upright": is_peg_half_turn,
             "success": is_peg_upright & close_to_table,
         }
 
@@ -244,10 +273,36 @@ class PokeCube_DrS_learn(DrS_BaseEnv, PokeCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
+    
+    def _initialize_episode(self, env_idx: torch.Tensor, options: dict):
+        super()._initialize_episode(env_idx, options)
+        b = len(env_idx)
+        qpos = np.array(
+                [
+                    0.0,
+                    np.pi / 8,
+                    0,
+                    -np.pi * 5 / 8,
+                    0,
+                    np.pi * 3 / 4,
+                    np.pi / 4,
+                    0.04,
+                    0.04,
+                ]
+            )
+        qpos = (
+            self._episode_rng.normal(
+                0, self.robot_init_qpos_noise, (b, len(qpos))
+            )
+            + qpos
+        )
+        qpos[:, -2:] = 0.04
+        self.agent.reset(qpos)
+        self.agent.robot.set_pose(sapien.Pose([-0.615, 0, 0]))
 
     def compute_stage_indicator(self):
         eval_info = self.evaluate()
         return {
             'stage_1': (torch.logical_or(eval_info["is_peg_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
-            'stage_2': (torch.logical_or(eval_info["is_peg_cube_fit"], eval_info["success"])).float(),
+            'stage_2': (torch.logical_or(eval_info["head_to_cube_dist"] <= (self.cube_half_size + 0.03), eval_info["success"])).float(),
         }
