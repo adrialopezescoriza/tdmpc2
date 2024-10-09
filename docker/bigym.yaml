@@ -1,4 +1,4 @@
-name: maniskill3
+name: bigym
 channels:
   - conda-forge
   - defaults
@@ -23,8 +23,8 @@ dependencies:
     - imageio-ffmpeg==0.4.9
     - kornia==0.7.1
     - moviepy==1.0.3
-    - mujoco==2.3.7
-    - numpy==1.23.5
+    - mujoco==3.1.5
+    - numpy==1.26
     - omegaconf==2.3.0
     - open3d==0.18.0
     - opencv-contrib-python==4.9.0.80
@@ -44,5 +44,4 @@ dependencies:
     - tqdm==4.66.1
     - wandb==0.16.2
     - wheel==0.38.0
-    - git+https://github.com/haosulab/ManiSkill.git#egg=mani-skill
-    - git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba#egg=metaworld
+    - git+https://github.com/adrialopezescoriza/bigym.git#egg=bigym

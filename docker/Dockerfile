@@ -16,7 +16,7 @@
 ############################################
 
 # base image
-FROM nvidia/cudagl:11.3.1-devel-ubuntu20.04
+FROM nvidia/cudagl:11.4.2-devel-ubuntu20.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # packages
@@ -38,38 +38,26 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     . /opt/conda/etc/profile.d/conda.sh && \
     conda init && \
     conda clean -ya
-ENV PATH /opt/conda/bin:$PATH
+ENV PATH=/opt/conda/bin:$PATH
 SHELL ["/bin/bash", "-c"]
 
-# conda environment
+# Base conda environment
 COPY environment.yaml /root
 RUN conda update conda && \
-    conda env update -n base -f /root/environment.yaml && \
+    conda env create -f /root/environment.yaml && \
     rm /root/environment.yaml && \
     conda clean -ya && \
     pip cache purge
 
-# mujoco 2.1.0
-ENV MUJOCO_GL egl
-ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
-RUN mkdir -p /root/.mujoco && \
-    wget https://www.tdmpc2.com/files/mjkey.txt && \
-    wget https://github.com/deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz && \
-    tar -xzf mujoco210-linux-x86_64.tar.gz && \
-    rm mujoco210-linux-x86_64.tar.gz && \
-    mv mujoco210 /root/.mujoco/mujoco210 && \
-    mv mjkey.txt /root/.mujoco/mjkey.txt && \
-    find /root/.mujoco -uid 421709 -exec chown root:root {} \; && \
-    python -c "import mujoco_py"
+# Bigym environment
+COPY bigym.yaml /root
+RUN conda update conda && \
+    conda env create -f /root/bigym.yaml && \
+    rm /root/bigym.yaml && \
+    conda clean -ya && \
+    pip cache purge
 
-# maniskill
-RUN pip install --upgrade git+https://github.com/haosulab/ManiSkill.git
-
-# metaworld
-RUN pip install git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba
-
-# Bigym
-RUN pip install git+https://github.com/chernyadev/bigym.git
+ENV MUJOCO_GL=egl
 
 # success!
 RUN echo "Successfully built Modem-DrS Docker image!"
