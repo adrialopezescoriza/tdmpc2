@@ -102,6 +102,7 @@ maniskill:
     action_repeat: 2
     obs_keys: ["agent", "image"]
     max_episode_steps: 100
+    sim_backend: gpu
     camera:
         image_size: 128 # 64, 128, 256
 

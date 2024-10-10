@@ -201,7 +201,7 @@ def make_env(cfg):
 		sensor_configs=camera_resolution,
 		human_render_camera_configs=dict(width=384, height=384),
 		reconfiguration_freq=1 if cfg.num_envs > 1 else None,
-		sim_backend=cfg.get("sim_backend", "auto"),
+		sim_backend=cfg.maniskill.get("sim_backend", "auto"),
 		render_backend="auto",
 	)
 
