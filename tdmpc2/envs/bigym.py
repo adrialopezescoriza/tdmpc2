@@ -35,6 +35,9 @@ class BiGymWrapper(gym.Wrapper):
 		self._t = 0
 		obs, info = super().reset(**kwargs)
 		return self.select_obs(obs), info
+	
+	def get_penalties(self):
+		return self.env.joint_vel_penalty()
 
 	def step(self, action):
 		reward = 0

@@ -142,9 +142,11 @@ class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
 
     def compute_stage_indicator(self):
         success = self.evaluate()["success"]
+        stage_1 = torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)
+        stage_2 = torch.logical_or(self.is_peg_pre_inserted(), success)
         return {
-            'is_correctly_grasped': (torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)).float(), # do this to allow releasing the peg when inserted
-            'is_peg_pre_inserted': (torch.logical_or(self.is_peg_pre_inserted(), success)).float(),
+            'is_correctly_grasped': torch.logical_or(stage_1, stage_2).float(), # do this to allow releasing the peg when inserted
+            'is_peg_pre_inserted': stage_2.float(),
         }
 
     @property

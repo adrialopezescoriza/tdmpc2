@@ -20,7 +20,7 @@ class TensorWrapper(gym.Wrapper):
 		return self._try_f32_tensor(self.env.rand_act())
 
 	def _try_f32_tensor(self, x):
-		x = torch.from_numpy(x) if isinstance(x, np.ndarray) else x
+		x = torch.from_numpy(x.copy()) if isinstance(x, np.ndarray) else x
 		if x.dtype == torch.float64:
 			x = x.float()
 		return x

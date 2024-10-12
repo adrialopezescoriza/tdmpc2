@@ -10,11 +10,31 @@ from bigym.bigym_env import BiGymEnv, CONTROL_FREQUENCY_MAX, CONTROL_FREQUENCY_M
 from bigym.action_modes import TorqueActionMode, JointPositionActionMode, PelvisDof
 from bigym.utils.observation_config import ObservationConfig, CameraConfig
 
+from transforms3d.quaternions import mat2quat
+
 from collections import OrderedDict
 import numpy as np
 
+def look_at(eye, target, up=(0, 0, 1)):
+
+    def normalize_vector(x, eps=1e-6):
+        x = np.asarray(x)
+        assert x.ndim == 1, x.ndim
+        norm = np.linalg.norm(x)
+        if norm < eps:
+            return np.zeros_like(x)
+        else:
+            return x / norm
+
+    forward = normalize_vector(np.array(target) - np.array(eye))
+    up = normalize_vector(up)
+    left = np.cross(up, forward)
+    up = np.cross(forward, left)
+    rotation = np.stack([forward, left, up], axis=1)
+    return mat2quat(rotation).tolist()
+
 class BiGymStages(BiGymEnv):
-    def __init__(self, obs_mode, img_size, *args, **kwargs):
+    def __init__(self, obs_mode, img_size, ext_camera = {"pos": None, "quat" : None}, *args, **kwargs):
         if obs_mode.startswith("rgb"):
             observation_config=ObservationConfig(
                 cameras=[
@@ -23,7 +43,15 @@ class BiGymStages(BiGymEnv):
                         rgb=True,
                         depth=False,
                         resolution=(img_size, img_size),
-                    )
+                    ),
+                    CameraConfig(
+                        name="external",
+                        rgb=True,
+                        depth=False,
+                        resolution=(img_size, img_size),
+                        pos=ext_camera["pos"],
+                        quat = ext_camera["quat"]
+                    ),
                 ],
             )
         elif obs_mode == "state":
@@ -39,6 +67,9 @@ class BiGymStages(BiGymEnv):
             *args, **kwargs
         )
 
+    def joint_vel_penalty(self):
+        return np.linalg.norm(self._robot.qvel) / 100 # Heuristic value, TODO: Check properly
+    
     def _reward(self) -> float:
         """Get current episode reward."""
         stage_indicators = self.compute_stage_indicators()
@@ -58,14 +89,15 @@ class WallCupboardOpenStages(BiGymStages, WallCupboardOpen):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 3
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 200
+        self.max_episode_steps = 150
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ], absolute=True)
 
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
         )
@@ -93,7 +125,8 @@ class DishwasherCloseTraysStages(BiGymStages, DishwasherCloseTrays):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
         )
@@ -111,14 +144,18 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 2
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 200
+        self.max_episode_steps = 150
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ], absolute=True)
 
+        quat = [ 0.3649717, -0.2778159, -0.1150751, 0.8811196 ]
+        quat = [quat[3]] + quat[:3]
+        
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[-1,-1.5,2], "quat":quat},
             *args, 
             **kwargs,
         )
@@ -137,14 +174,15 @@ class MovePlateStages(BiGymStages, MovePlate):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 5
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 200
+        self.max_episode_steps = 150
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.RZ])
 
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[0.5,-1,2], "quat":None},
             *args, 
             **kwargs,
         )
@@ -182,6 +220,7 @@ class FlipCupStages(BiGymStages, FlipCup):
             img_size=img_size,
             action_mode=action_mode,
             control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
         )
@@ -212,14 +251,15 @@ class ReachTargetStages(BiGymStages, ReachTarget):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 1
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 100
+        self.max_episode_steps = 50
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.RZ])
 
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
         )
@@ -243,7 +283,8 @@ class PickBoxStages(BiGymStages, PickBox):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            ext_camera={"pos":[0.7,-2.5,2.5], "quat":None},
             *args, 
             **kwargs,
         )
@@ -252,12 +293,12 @@ class PickBoxStages(BiGymStages, PickBox):
         box_pose = self.box.get_pose()
         counter_pose = self.cabinet_base.counter.get_position()
 
-        is_object_taken = not self.box.is_colliding(self.floor)
+        is_object_taken = (not self.box.is_colliding(self.floor)) and np.all([np.allclose(self.box.get_pose()[:3], self.robot.get_hand_pos(side), atol=0.2) for side in self.robot.grippers]) 
         is_object_lifted = box_pose[2] > counter_pose[2]
         is_object_above_counter = np.allclose(box_pose[:2], counter_pose[:2], atol=0.4) and is_object_lifted
         
         return {
-            "stage_1": float(is_object_taken or self.success),
+            "stage_1": float(is_object_taken or is_object_above_counter),
             "stage_2": float(is_object_lifted or self.success),
             "stage_3": float(is_object_above_counter or self.success),
         }
