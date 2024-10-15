@@ -102,4 +102,5 @@ def make_env(cfg):
 	Make Vectorized Meta-World environment.
 	"""
 	env = Vectorized(cfg, _make_env)
+	cfg.action_penalty = cfg.metaworld.action_penalty
 	return env

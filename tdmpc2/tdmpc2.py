@@ -267,7 +267,7 @@ class TDMPC2:
 		discount = self.discount[task].unsqueeze(-1) if self.cfg.multitask else self.discount
 		return reward + discount * self.model.Q(next_z, pi, task, return_type='min', target=True)
 
-	def update(self, buffer, modify_reward = None):
+	def update(self, buffer, modify_reward = None, action_penalty = False):
 		"""
 		Main update function. Corresponds to one iteration of model learning.
 		
@@ -287,6 +287,9 @@ class TDMPC2:
 			# Modify reward if necessary
 			if modify_reward:
 				reward = modify_reward(next_z, reward)
+
+			if action_penalty:
+				reward -= torch.linalg.norm(action, ord=2, dim=-1, keepdim=True).pow(2) / (action.shape[-1] * 10)
 			
 			# Compute td_targets
 			td_targets = self._td_target(next_z, reward, task)

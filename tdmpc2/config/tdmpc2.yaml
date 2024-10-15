@@ -96,6 +96,7 @@ action_dims: ???
 episode_lengths: ???
 seed_steps: ???
 bin_size: ???
+action_penalty: ???
 
 # environments
 maniskill:
@@ -103,6 +104,7 @@ maniskill:
     obs_keys: ["agent", "image"]
     max_episode_steps: 100
     sim_backend: gpu
+    action_penalty: false
     camera:
         image_size: 128 # 64, 128, 256
 
@@ -112,6 +114,7 @@ metaworld:
     render_mode: "rgb_array" # "human", "rgb_array"
     reward_mode: ???
     obs: ???
+    action_penalty: false
     camera:
         image_size: 224 # 64, 128, 256
 
@@ -119,5 +122,6 @@ bigym:
     action_repeat: 1
     render_mode: "rgb_array" # "human", "rgb_array"
     obs: ???
+    action_penalty: true
     camera:
         image_size: 224 # 64, 128, 256

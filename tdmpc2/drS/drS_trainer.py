@@ -202,7 +202,7 @@ class DrsTrainer(Trainer):
 				for _ in range(num_updates):
 					disc_train_metrics = self.disc.update(self.buffer,
 										   encoder_function=partial(self.agent.model.encode, task=None))
-					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward)
+					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward, action_penalty=self.cfg.action_penalty)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 

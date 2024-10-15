@@ -205,6 +205,8 @@ def make_env(cfg):
 		render_backend="auto",
 	)
 
+	cfg.action_penalty = cfg.maniskill.action_penalty
+
 	# DrS Reward Wrapper
 	if task_cfg.get("reward_mode", None) == "drS":
 		env = DrsRewardWrapper(env, cfg.drS_ckpt)

@@ -81,7 +81,8 @@ def _make_env(cfg):
 
 def make_env(cfg):
 	"""
-	Make Vectorized Meta-World environment.
+	Make Vectorized BiGym environment.
 	"""
 	env = Vectorized(cfg, _make_env)
+	cfg.action_penalty = cfg.bigym.get("action_penalty", False)
 	return env

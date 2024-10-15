@@ -123,7 +123,7 @@ class OnlineTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
-					_train_metrics = self.agent.update(self.buffer)
+					_train_metrics = self.agent.update(self.buffer, action_penalty=self.cfg.action_penalty)
 				train_metrics.update(_train_metrics)
 
 			self._step += self.cfg.num_envs
