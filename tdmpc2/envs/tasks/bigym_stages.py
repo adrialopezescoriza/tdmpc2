@@ -66,9 +66,6 @@ class BiGymStages(BiGymEnv):
             observation_config=observation_config,
             *args, **kwargs
         )
-
-    def joint_vel_penalty(self):
-        return np.linalg.norm(self._robot.qvel) / 100 # Heuristic value, TODO: Check properly
     
     def _reward(self) -> float:
         """Get current episode reward."""
@@ -96,7 +93,7 @@ class WallCupboardOpenStages(BiGymStages, WallCupboardOpen):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
@@ -154,7 +151,7 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[-1,-1.5,2], "quat":quat},
             *args, 
             **kwargs,
@@ -181,7 +178,7 @@ class MovePlateStages(BiGymStages, MovePlate):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[0.5,-1,2], "quat":None},
             *args, 
             **kwargs,
@@ -219,7 +216,7 @@ class FlipCupStages(BiGymStages, FlipCup):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 4,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
@@ -258,7 +255,7 @@ class ReachTargetStages(BiGymStages, ReachTarget):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[0,-2,3], "quat":None},
             *args, 
             **kwargs,
@@ -283,7 +280,7 @@ class PickBoxStages(BiGymStages, PickBox):
             obs_mode=obs_mode,
             img_size=img_size,
             action_mode=action_mode,
-            control_frequency=CONTROL_FREQUENCY_MIN * 6,
+            control_frequency=CONTROL_FREQUENCY_MIN,
             ext_camera={"pos":[0.7,-2.5,2.5], "quat":None},
             *args, 
             **kwargs,
