@@ -14,6 +14,8 @@ from transforms3d.quaternions import mat2quat
 
 from collections import OrderedDict
 import numpy as np
+from gymnasium.spaces import Box
+import copy
 
 def look_at(eye, target, up=(0, 0, 1)):
 
@@ -78,6 +80,12 @@ class BiGymStages(BiGymEnv):
     
     def compute_stage_indicators(self):
         raise NotImplementedError
+
+    def reset(self, **kwargs):
+        res = super().reset(**kwargs)
+        if hasattr(self, "action_space_"):
+            self.action_space = self.action_space_
+        return res
 
 ########################################
 ########   Wall Cupboard Open   ########
@@ -144,9 +152,10 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
         self.max_episode_steps = 150
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ], absolute=True)
 
+        # Modify external camera orientation
         quat = [ 0.3649717, -0.2778159, -0.1150751, 0.8811196 ]
         quat = [quat[3]] + quat[:3]
-        
+
         super().__init__(
             obs_mode=obs_mode,
             img_size=img_size,
@@ -156,6 +165,20 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
             *args, 
             **kwargs,
         )
+
+        # Resize action space to fit demos
+        low_ = np.array([-0.05256215, -0.01346442, -0.02014803, -0.02447689, -0.48408347,
+                        -0.16367014, -0.33427486, -0.83284396,  0.        , -1.4986415 ,
+                        -0.2914733 , -0.1270883 , -0.6966172 , -1.3383255 ,  0.        ,
+                            0.        ])
+        
+        high_ = np.array([0.02163532, 0.02605202, 0.00349079, 0.01902353, 0.18264526,
+                        0.01864652, 0.10289277, 0.04801869, 0.4592447 , 0.14056844,
+                        0.27309757, 0.47346738, 1.4556292 , 0.24234204, 0.        ,
+                        1.        ])
+        
+        self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
+        self.action_space = copy.deepcopy(self.action_space_)
 
     def compute_stage_indicators(self):
         is_drawer_grasped = np.any([self.robot.is_gripper_holding_object(self.cabinet_drawers, side) for side in self.robot.grippers])
@@ -183,6 +206,17 @@ class MovePlateStages(BiGymStages, MovePlate):
             *args, 
             **kwargs,
         )
+
+        low_ = np.array([-0.01962075, -0.07761819, -0.06895841, -0.26554358, -0.18311483,
+                        -0.26119497, -0.29295182, -0.49999997, -0.2771536 , -0.14540102,
+                        -0.14482735, -0.2845109 , -0.5536907 ,  0.        ,  0.        ])
+        
+        high_ = np.array([0.0175525 , 0.03667733, 0.14617348, 0.09228504, 0.08773132,
+                        0.12075103, 0.26808703, 0.631871  , 0.103172  , 0.10693253,
+                        0.12817591, 0.23806447, 0.42442662, 1.        , 0.        ])
+
+        self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
+        self.action_space = copy.deepcopy(self.action_space_)
 
     def compute_stage_indicators(self):
         plate = self.plates[0]
@@ -285,6 +319,20 @@ class PickBoxStages(BiGymStages, PickBox):
             *args, 
             **kwargs,
         )
+
+        # Resize action space
+        low_ = np.array([-0.01609539, -0.0205579 , -0.0255008 , -0.05639558, -0.27723205,
+                        -0.20132488, -0.14135206, -0.4655914 , -0.22796647, -0.56218374,
+                        -0.16436169, -0.09876764, -0.5635499 , -0.8177019 ,  0.        ,
+                            0.        ])
+        
+        high_ = np.array([0.02267784, 0.02073249, 0.10178855, 0.06766292, 0.39900678,
+                        0.05100107, 0.05727863, 0.6134118 , 0.50238436, 0.70846236,
+                        0.19214949, 0.16949272, 0.70000005, 0.65224624, 0.        ,
+                        0.        ])
+        
+        self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
+        self.action_space = copy.deepcopy(self.action_space_)
 
     def compute_stage_indicators(self):
         box_pose = self.box.get_pose()
