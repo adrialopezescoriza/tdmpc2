@@ -289,7 +289,7 @@ class TDMPC2:
 				reward = modify_reward(next_z, reward)
 
 			if action_penalty:
-				reward -= torch.linalg.norm(action, ord=2, dim=-1, keepdim=True).pow(2) / (action.shape[-1] * 10)
+				reward -= torch.linalg.norm(action, ord=2, dim=-1, keepdim=True).pow(2) / (action.shape[-1] * 5)
 			
 			# Compute td_targets
 			td_targets = self._td_target(next_z, reward, task)

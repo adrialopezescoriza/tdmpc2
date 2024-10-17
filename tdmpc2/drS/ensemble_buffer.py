@@ -18,7 +18,7 @@ class EnsembleBuffer(Buffer):
 
 		# Load dataset into second replay buffer (ugly) TODO: This should be a normal dataloader
 		from .data_utils import load_dataset_as_td
-		demo_dataset = load_dataset_as_td(_cfg2.demo_path, num_traj=_cfg2.n_demos)
+		demo_dataset = load_dataset_as_td(_cfg2.demo_path, num_traj=_cfg2.n_demos, success_only=_cfg2.demo_success_only)
 		cfg.n_demos = len(demo_dataset)
 		_cfg2.buffer_size = len(demo_dataset) * len(demo_dataset[0]) # Offline buffer is not dynamically alocated
 		# NOTE: Make sure demonstrations contain same type of rewards as online environment!

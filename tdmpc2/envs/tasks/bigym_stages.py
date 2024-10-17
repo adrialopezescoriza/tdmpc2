@@ -177,6 +177,9 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
                         0.27309757, 0.47346738, 1.4556292 , 0.24234204, 0.        ,
                         1.        ])
         
+        low_[:-2] = -np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        high_[:-2] = np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        
         self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
         self.action_space = copy.deepcopy(self.action_space_)
 
@@ -215,6 +218,9 @@ class MovePlateStages(BiGymStages, MovePlate):
                         0.12075103, 0.26808703, 0.631871  , 0.103172  , 0.10693253,
                         0.12817591, 0.23806447, 0.42442662, 1.        , 0.        ])
 
+        low_[:-2] = -np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        high_[:-2] = np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        
         self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
         self.action_space = copy.deepcopy(self.action_space_)
 
@@ -307,7 +313,7 @@ class PickBoxStages(BiGymStages, PickBox):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
         self.n_stages = 4
         self.reward_mode = "semi_sparse"
-        self.max_episode_steps = 200
+        self.max_episode_steps = 500
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.Z, PelvisDof.RZ])
 
         super().__init__(
@@ -330,6 +336,9 @@ class PickBoxStages(BiGymStages, PickBox):
                         0.05100107, 0.05727863, 0.6134118 , 0.50238436, 0.70846236,
                         0.19214949, 0.16949272, 0.70000005, 0.65224624, 0.        ,
                         0.        ])
+        
+        low_[:-2] = -np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        high_[:-2] = np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
         
         self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
         self.action_space = copy.deepcopy(self.action_space_)

@@ -36,8 +36,13 @@ class BiGymWrapper(gym.Wrapper):
 		obs, info = super().reset(**kwargs)
 		return self.select_obs(obs), info
 	
-	def get_penalties(self):
-		return self.env.joint_vel_penalty()
+	def get_penalties(self, obs):
+		# Penalize only qvelocities of joints
+		if isinstance(obs["state"], torch.Tensor):
+			qvel_norm = torch.linalg.norm(obs["state"][30:60], ord=2, dim=-1, keepdim=True) / 100
+		else:
+			qvel_norm = np.linalg.norm(obs["state"][30:60], p=2, axis=-1, keepdims=True) / 100
+		return qvel_norm
 
 	def step(self, action):
 		reward = 0
