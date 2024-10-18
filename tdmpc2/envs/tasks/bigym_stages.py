@@ -195,7 +195,7 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
 ########################################
 class MovePlateStages(BiGymStages, MovePlate):
     def __init__(self, obs_mode, img_size, *args, **kwargs):
-        self.n_stages = 5
+        self.n_stages = 2
         self.reward_mode = "semi_sparse"
         self.max_episode_steps = 150
         action_mode=JointPositionActionMode(floating_base=True, floating_dofs=[PelvisDof.X, PelvisDof.Y, PelvisDof.RZ])
@@ -235,10 +235,10 @@ class MovePlateStages(BiGymStages, MovePlate):
         is_plate_on_target = plate.is_colliding(self.rack_target)
 
         return {
-            "stage1": is_plate_grasped or is_plate_above_target,
-            "stage2": ((is_plate_lifted or is_plate_on_target) and is_plate_grasped) or is_plate_above_target,
-            "stage3": is_plate_above_target,
-            "stage4": is_plate_on_target,
+            #"stage1": is_plate_grasped or is_plate_above_target,
+            "stage1": ((is_plate_lifted or is_plate_on_target) and is_plate_grasped) or is_plate_above_target,
+            #"stage3": is_plate_above_target,
+            #"stage4": is_plate_on_target,
         }
 
 ########################################
