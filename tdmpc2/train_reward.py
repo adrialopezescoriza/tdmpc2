@@ -19,6 +19,7 @@ from trainer.online_trainer import OnlineTrainer
 from drS.drS_trainer import DrsTrainer
 from drS.modem_trainer import ModemTrainer
 from drS.ensemble_buffer import EnsembleBuffer
+from drS.drS_buffer import DrSBuffer
 
 torch.backends.cudnn.benchmark = True
 
@@ -50,8 +51,6 @@ def train(cfg: dict):
 	cfg.use_demos = cfg.oversample_ratio > 0.0
 	assert cfg.oversample_ratio >= 0.0 and cfg.oversample_ratio <= 1.0, \
 		f"Oversampling ratio {cfg.oversample_ratio} is not between 0 and 1"
-	if cfg.get("policy_pretraining", False):
-		assert cfg.use_demos, "Can't pretrain policy if oversampling ratio is 0.0"
 	cfg = parse_cfg(cfg)
 	set_seed(cfg.seed)
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)
@@ -63,7 +62,7 @@ def train(cfg: dict):
 		cfg.algorithm = "Modem2 + DrS" if cfg.use_demos else "TDMPC2 + DrS"
 		trainer_cls = DrsTrainer
 		cfg.n_stages = env_.n_stages
-		buffer_cls = EnsembleBuffer
+		buffer_cls = EnsembleBuffer if cfg.use_demos else DrSBuffer
 	elif cfg.use_demos:
 		# MoDem
 		cfg.algorithm = "Modem2"
