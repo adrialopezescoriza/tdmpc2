@@ -19,6 +19,7 @@ class TDMPC2:
 		self.cfg = cfg
 		self.device = torch.device('cuda')
 		self.model = WorldModel(cfg).to(self.device)
+		self.bc_model = WorldModel(cfg).to(self.device)
 		self.optim = torch.optim.Adam([
 			{'params': self.model._encoder.parameters(), 'lr': self.cfg.lr*self.cfg.enc_lr_scale},
 			{'params': self.model._dynamics.parameters()},
@@ -27,7 +28,7 @@ class TDMPC2:
 			{'params': self.model._task_emb.parameters() if self.cfg.multitask else []}
 		], lr=self.cfg.lr)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr, eps=1e-5)
-		self.bc_optim = torch.optim.Adam(self.model.parameters(), lr=self.cfg.lr)
+		self.bc_optim = torch.optim.Adam(self.bc_model.parameters(), lr=self.cfg.lr)
 		self.model.eval()
 		self.scale = RunningScale(cfg)
 		self.cfg.iterations += 2*int(cfg.action_dim >= 20) # Heuristic for large action spaces
@@ -77,7 +78,7 @@ class TDMPC2:
 		"""
 		obs, action, rew, task = buffer.sample(return_td=False)
 		self.bc_optim.zero_grad(set_to_none=True)
-		a = self.model.pi(self.model.encode(obs[:-1], task), task)[0]
+		a = self.bc_model.pi(self.bc_model.encode(obs[:-1], task), task)[0]
 		loss = F.mse_loss(a, action, reduce=True)
 		loss.backward()	
 
@@ -87,6 +88,7 @@ class TDMPC2:
 			error_if_nonfinite=False,
 		)
 		self.bc_optim.step()
+		self.model.load_state_dict(self.bc_model.state_dict())
 
 		metrics = {
 			"bc_loss": loss.item()
@@ -110,8 +112,8 @@ class TDMPC2:
 		obs = obs.to(self.device, non_blocking=True)
 		if task is not None:
 			task = torch.tensor([task], device=self.device)
-		z = self.model.encode(obs, task)
-		a = self.model.pi(z, task)[int(not eval_mode)]
+		z = self.bc_model.encode(obs, task)
+		a = self.bc_model.pi(z, task)[int(not eval_mode)]
 		return a.cpu()
 	
 	@torch.no_grad()

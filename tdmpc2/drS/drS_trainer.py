@@ -27,6 +27,8 @@ class DrsTrainer(Trainer):
 		self._pretrain_step = 0
 		self._ep_idx = 0
 		self._start_time = time()
+		self._alpha = 1
+		self._alpha_decay = 1
 
 		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
 
@@ -104,11 +106,11 @@ class DrsTrainer(Trainer):
 		n_iterations = self.cfg.pretrain.n_epochs
 		self.cfg.pretrain.eval_freq = n_iterations // 25
 		start_time = time()
-		best_model, best_score = deepcopy(self.agent.model.state_dict()), 0
+		best_model, best_score = deepcopy(self.agent.bc_model.state_dict()), 0
 
 		print(colored(f"Policy pretraining: {n_iterations} iterations", "red", attrs=["bold"]))
 
-		self.agent.model.train()
+		self.agent.bc_model.train()
 		for self._pretrain_step in range (n_iterations):
 			metrics = self.agent.init_bc(demo_buffer)
 
@@ -118,7 +120,7 @@ class DrsTrainer(Trainer):
 				self.logger.log(eval_metrics, category="pretrain")
 
 				if eval_metrics["episode_reward"] > best_score:
-					best_model = deepcopy(self.agent.model.state_dict())
+					best_model = deepcopy(self.agent.bc_model.state_dict())
 					best_score = eval_metrics["episode_reward"]
 					best_seed = eval_metrics["best_seed"]
 			
@@ -127,11 +129,12 @@ class DrsTrainer(Trainer):
 				self.logger.log(metrics, category="pretrain")
 		
 		if best_score == 0:
-			best_model = deepcopy(self.agent.model.state_dict())
+			best_model = deepcopy(self.agent.bc_model.state_dict())
 			best_seed = eval_metrics["best_seed"]
 		
 		self.agent.model.eval()
 		self.agent.model.load_state_dict(best_model)
+		self.agent.bc_model.load_state_dict(best_model)
 		self.seed_scheduler.start(init_seed=best_seed, max_seeds=1e4)
 
 	def train(self):
@@ -183,7 +186,11 @@ class DrsTrainer(Trainer):
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				action = self.agent.act(obs, t0=len(self._tds)==1)
+				self._alpha = max(0, self._alpha - self._alpha_decay)
+				if np.random.random() < self._alpha and self.cfg.get("policy_pretraining", False):
+					action = self.agent.policy_action(obs, eval_mode=True)
+				else:
+					action = self.agent.act(obs, t0=len(self._tds)==1)
 			elif self.cfg.get("policy_pretraining", False):
 				action = self.agent.policy_action(obs, eval_mode=True)
 			else:
