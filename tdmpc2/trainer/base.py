@@ -11,7 +11,6 @@ class Trainer:
 		self.logger = logger
 		self.seed_scheduler = SeedScheduler(enable=cfg.seed_scheduler, num_envs=self.cfg.num_envs)
 		print('Architecture:', self.agent.model)
-		print("Learnable parameters: {:,}".format(self.agent.model.total_params))
 
 	def eval(self):
 		"""Evaluate a TD-MPC2 agent."""

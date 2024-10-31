@@ -4,12 +4,13 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tensordict.tensordict import TensorDict
 
 from common.logger import timeit
 
 
 class Discriminator(nn.Module):
-    def __init__(self, envs, cfg, state_shape=None):
+    def __init__(self, envs, cfg, state_shape=None, compile=False):
         super().__init__()
         self.n_stages = envs.n_stages
         state_shape = np.prod(state_shape) if state_shape else np.prod(envs.observation_space.shape)
@@ -22,10 +23,14 @@ class Discriminator(nn.Module):
         ])
         self.trained = [False] * self.n_stages
         self._cfg = cfg
-        self.device = torch.device('cuda')
+        self.device = torch.device('cuda:0')
         self.to(self.device)
 
-        self.optimizer = optim.Adam(self.parameters(), lr=cfg.disc_lr)
+        self.optimizer = optim.Adam(self.parameters(), lr=cfg.disc_lr, capturable=True)
+
+        if compile:
+            print('compiling - discriminator update')
+            self._update = torch.compile(self._update, mode="reduce-overhead")
 
     @property
     def total_params(self):
@@ -46,10 +51,14 @@ class Discriminator(nn.Module):
     def forward(self, next_s, stage_idx):
         net = self.nets[stage_idx]
         return net(next_s)
+    
+    def update(self, buffer, **kwargs):
+        data = buffer.sample_for_disc(self._cfg.batch_size)
+        torch.compiler.cudagraph_mark_step_begin()
+        return self._update(data, **kwargs)
 
-    def update(self, buffer, encoder_function=None):
+    def _update(self, data, encoder_function=None):
         disc_losses = []
-        data = buffer.sample_for_disc(self._cfg.batch_size) # List of data from each buffer
         for stage_idx in range(self.n_stages):
             success_data = data[stage_idx]["success_data"]
             if len(success_data) == 0:
@@ -81,7 +90,7 @@ class Discriminator(nn.Module):
             self.set_trained(stage_idx)
             disc_losses += [float(disc_loss.mean().item())]
 
-        return {"discriminator_loss": np.mean(disc_losses)} if len(disc_losses) != 0 else {}
+        return TensorDict({"discriminator_loss": np.mean(disc_losses)} if len(disc_losses) != 0 else {})
 
     def get_reward(self, next_s, stage_idx):
         '''

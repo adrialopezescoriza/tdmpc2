@@ -20,7 +20,7 @@ class ModemTrainer(Trainer):
 		self._ep_idx = 0
 		self._start_time = time()
 		self._alpha = 1
-		self._alpha_decay = 1e-4
+		self._alpha_decay = 1 / self.cfg.max_bc_steps # Applies linear decay to alpha (percentage of bc steps)
 
 	def common_metrics(self):
 		"""Return a dictionary of current metrics."""
@@ -39,6 +39,7 @@ class ModemTrainer(Trainer):
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
+				torch.compiler.cudagraph_mark_step_begin()
 				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
@@ -128,7 +129,7 @@ class ModemTrainer(Trainer):
 
 		# Start interactive training
 		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
-		train_metrics, done, eval_next = {}, torch.tensor(True), True
+		train_metrics, done, eval_next = {}, torch.tensor(True), False
 		while self._step <= self.cfg.steps:
 
 			# Evaluate agent periodically

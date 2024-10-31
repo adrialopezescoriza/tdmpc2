@@ -28,9 +28,9 @@ class DrsTrainer(Trainer):
 		self._ep_idx = 0
 		self._start_time = time()
 		self._alpha = 1
-		self._alpha_decay = 1e-4
+		self._alpha_decay = 1 / self.cfg.max_bc_steps # Applies linear decay to alpha (percentage of bc steps)
 
-		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,))
+		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,), compile=self.cfg.compile)
 
 		print('Discriminator Architecture:', self.disc)
 		print("Learnable parameters: {:,}".format(self.agent.model.total_params + self.disc.total_params))
@@ -52,6 +52,7 @@ class DrsTrainer(Trainer):
 			if self.cfg.save_video:
 				self.logger.video.init(self.env, enabled=True)
 			while not done.any():
+				torch.compiler.cudagraph_mark_step_begin()
 				action = self.agent.policy_action(obs, eval_mode=True) if pretrain else self.agent.act(obs, t0=t==0, eval_mode=True)
 				obs, reward, done, info = self.env.step(action)
 				ep_reward += reward
@@ -128,6 +129,10 @@ class DrsTrainer(Trainer):
 				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
 		
+		eval_metrics = self.eval(pretrain=True)
+		eval_metrics.update({"iteration": self._pretrain_step})
+		self.logger.log(eval_metrics, category="pretrain")
+
 		if best_score == 0:
 			best_model = deepcopy(self.agent.bc_model.state_dict())
 			best_seed = eval_metrics["best_seed"]
@@ -146,7 +151,7 @@ class DrsTrainer(Trainer):
 
 		# Start interactive training
 		print(colored("\nReplay buffer seeding", "yellow", attrs=["bold"]))
-		train_metrics, done, eval_next = {}, torch.tensor(True), True
+		train_metrics, done, eval_next = {}, torch.tensor(True), False
 		while self._step <= self.cfg.steps:
 
 			# Evaluate agent periodically
@@ -209,7 +214,7 @@ class DrsTrainer(Trainer):
 				for _ in range(num_updates):
 					disc_train_metrics = self.disc.update(self.buffer,
 										   encoder_function=partial(self.agent.model.encode, task=None))
-					agent_train_metrics = self.agent.update(self.buffer, self.disc.get_reward, action_penalty=self.cfg.action_penalty)
+					agent_train_metrics = self.agent.update(self.buffer, modify_reward=self.disc.get_reward, action_penalty=self.cfg.action_penalty)
 				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 

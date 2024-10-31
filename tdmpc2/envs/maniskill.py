@@ -108,7 +108,9 @@ def select_obs(keys, obs):
 	for k in keys:
 		if k == "agent":
 			# Stack all states
-			processed["state"] = flatten_state_dict(obs[k], use_torch=True)
+			state_agent = flatten_state_dict(obs["agent"], use_torch=True)
+			state_extra = flatten_state_dict(obs["extra"], use_torch=True)
+			processed["state"] = torch.cat([state_agent, state_extra], dim=-1)
 		elif k == "image":
 			# Only take rgb + Put channel dimension first
 			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
@@ -206,6 +208,7 @@ def make_env(cfg):
 	)
 
 	cfg.action_penalty = cfg.maniskill.action_penalty
+	cfg.max_bc_steps = cfg.maniskill.max_bc_steps
 
 	# DrS Reward Wrapper
 	if task_cfg.get("reward_mode", None) == "drS":

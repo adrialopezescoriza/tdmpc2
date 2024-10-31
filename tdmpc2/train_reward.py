@@ -1,6 +1,8 @@
 import os
 os.environ['MUJOCO_GL'] = 'egl'
 os.environ['LAZY_LEGACY_OP'] = '0'
+os.environ['TORCHDYNAMO_INLINE_INBUILT_NN_MODULES'] = "1"
+os.environ['TORCH_LOGS'] = "+recompiles"
 import warnings
 warnings.filterwarnings('ignore')
 import torch
@@ -23,6 +25,7 @@ from drS.drS_buffer import DrSBuffer
 
 torch.backends.cudnn.benchmark = True
 
+torch.set_float32_matmul_precision('high')
 
 @hydra.main(config_name='drS', config_path='./config/')
 def train(cfg: dict):

@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import torch
+import random
 
 from tensordict.tensordict import TensorDict
 
@@ -50,6 +51,7 @@ def load_dataset_as_td(path, num_traj=None, success_only=False):
     """
     with open(path, 'rb') as f:
         trajectories = pickle.load(f)
+        random.shuffle(trajectories)
     if success_only:
         trajectories = [t for t in trajectories if t['infos'][-1]['success']]
     if num_traj is not None:

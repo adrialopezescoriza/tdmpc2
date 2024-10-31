@@ -1,10 +1,10 @@
+import dataclasses
 import os
 import datetime
 import re
 import numpy as np
 import pandas as pd
 from termcolor import colored
-from omegaconf import OmegaConf
 from functools import wraps
 import time
 import cv2
@@ -172,7 +172,7 @@ class Logger:
 			group=self._group,
 			tags=cfg_to_group(cfg, return_list=True) + [f"seed:{cfg.seed}"],
 			dir=self._log_dir,
-			config=OmegaConf.to_container(cfg, resolve=True),
+			config=dataclasses.asdict(cfg),
 		)
 
 		# Define x-axis for each metric

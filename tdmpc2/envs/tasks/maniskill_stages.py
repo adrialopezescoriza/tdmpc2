@@ -19,11 +19,12 @@ class PandaWristCamPegCustom(PandaWristCam):
     def _sensor_configs(self):
         pose2 = sapien_utils.look_at([0.0, 0.0, 0.0], [0.0, 0.0, 0.4])
         pose3 = sapien_utils.look_at([0.0, 0.0, 0.0], [1.0, 0.0, 0.3])
+        q = pose3.q.squeeze().tolist() if isinstance(pose3.q, torch.Tensor) else pose3.q
         return [
             CameraConfig(
                 uid="hand_camera",
                 pose = sapien.Pose(p=[0, 0, 0],
-                                   q=pose3.q),
+                                   q=q),
                 width=128,
                 height=128,
                 fov=1.2 * np.pi / 2,
@@ -79,7 +80,7 @@ from mani_skill.envs.tasks.tabletop.pick_cube import PickCubeEnv
 class PickAndPlace_DrS_learn(DrS_BaseEnv, PickCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
 
     def check_obj_placed(self):
         obj_to_goal_pos = self.goal_pos - self.obj_pose.p
@@ -89,7 +90,7 @@ class PickAndPlace_DrS_learn(DrS_BaseEnv, PickCubeEnv):
         eval_info = self.evaluate()
         return {
             'is_grasped': (eval_info['is_grasped']).float(),
-            'is_obj_placed': (eval_info['is_obs_placed']).float(),
+            'is_obj_placed': (eval_info['is_obj_placed']).float(),
         }
 
 ############################################

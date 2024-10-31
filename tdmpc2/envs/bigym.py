@@ -90,4 +90,5 @@ def make_env(cfg):
 	"""
 	env = Vectorized(cfg, _make_env)
 	cfg.action_penalty = cfg.bigym.get("action_penalty", False)
+	cfg.max_bc_steps = cfg.bigym.max_bc_steps
 	return env
