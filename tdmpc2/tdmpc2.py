@@ -30,7 +30,7 @@ class TDMPC2(torch.nn.Module):
 			 }
 		], lr=self.cfg.lr, capturable=True)
 		self.pi_optim = torch.optim.Adam(self.model._pi.parameters(), lr=self.cfg.lr, eps=1e-5, capturable=True)
-		self.bc_optim = torch.optim.Adam(self.bc_model.parameters(), lr=self.cfg.lr, eps=1e-5, capturable=True)
+		self.bc_optim = torch.optim.Adam(self.bc_model.parameters(), lr=self.cfg.lr)
 		self.model.eval()
 		self.scale = RunningScale(cfg)
 		self.cfg.iterations += 2*int(cfg.action_dim >= 20) # Heuristic for large action spaces
@@ -105,12 +105,6 @@ class TDMPC2(torch.nn.Module):
 		a = self.bc_model.pi(self.bc_model.encode(obs[:-1], task), task)[0]
 		loss = F.mse_loss(a, action, reduce=True)
 		loss.backward()	
-
-		torch.nn.utils.clip_grad_norm_(
-			self.bc_model.parameters(),
-			self.cfg.grad_clip_norm,
-			error_if_nonfinite=False,
-		)
 		self.bc_optim.step()
 		self.model.load_state_dict(self.bc_model.state_dict())
 
