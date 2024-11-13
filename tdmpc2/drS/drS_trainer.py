@@ -28,7 +28,6 @@ class DrsTrainer(Trainer):
 		self._ep_idx = 0
 		self._start_time = time()
 		self._alpha = 1
-		self._alpha_decay = 1 / self.cfg.max_bc_steps # Applies linear decay to alpha (percentage of bc steps)
 
 		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,), compile=self.cfg.compile)
 
@@ -191,7 +190,7 @@ class DrsTrainer(Trainer):
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				self._alpha = max(0, self._alpha - (self._alpha_decay * self.cfg.num_envs))
+				self._alpha = max(0, self.cfg.max_bc_steps - self._step)
 				if np.random.random() < self._alpha and self.cfg.get("policy_pretraining", False):
 					action = self.agent.policy_action(obs, eval_mode=True)
 				else:
