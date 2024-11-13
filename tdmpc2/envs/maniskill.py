@@ -208,7 +208,8 @@ def make_env(cfg):
 	)
 
 	cfg.action_penalty = cfg.maniskill.action_penalty
-	cfg.max_bc_steps = cfg.maniskill.max_bc_steps
+	if isinstance(cfg.max_bc_steps, str):
+		cfg.max_bc_steps = cfg.maniskill.max_bc_steps 
 
 	# DrS Reward Wrapper
 	if task_cfg.get("reward_mode", None) == "drS":

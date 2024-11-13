@@ -103,5 +103,6 @@ def make_env(cfg):
 	"""
 	env = Vectorized(cfg, _make_env)
 	cfg.action_penalty = cfg.metaworld.action_penalty
-	cfg.max_bc_steps = cfg.metaworld.max_bc_steps
+	if isinstance(cfg.max_bc_steps, str):
+		cfg.max_bc_steps = cfg.metaworld.max_bc_steps 
 	return env
