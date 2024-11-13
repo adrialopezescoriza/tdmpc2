@@ -5,6 +5,9 @@ tdmpc2/wandb/
 logs/
 outputs/
 wandb/
+results/csv/
+results/output/
+results/figures/
 
 # HPC
 nautilus/*.yaml

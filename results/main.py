@@ -10,78 +10,53 @@ import yaml
 import json
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from plots import *
+from results import *
 
-
-EXP_TO_LABEL = {
-    # 'sac': 'SAC',
-    # 'sac-lowlevel-tdmpc2': 'SAC w/ LL TD-MPC$\\bf{2}$',
-    'baseline': 'TD-MPC$\\bf{2}$',
-    'default': 'Ours',
-    # 'blind': 'Blind',
-    # 'ft-corridor': 'Finetuned',
-}
-EXP_TO_COLOR = {
-    # 'sac': -1,
-    # 'sac-lowlevel-tdmpc2': 2,
-    'baseline': 1,
-    'default': 0,
-    # 'blind': 3,
-    # 'ft-corridor': 4,
-}
-MAX_RETURN = {
-    'stand': 500,
-    'walk': 500,
-    'run': 500,
-    'reach': 400,
-    'corridor': 200,
-    'hurdles-corridor': 200,
-    'walls-corridor': 100,
-    'gaps-corridor': 200,
-    'stairs-corridor': 200,
+TASKS_DEMOS = {
+    'stack-cube': [25],
+    'peg-insertion': [100],
+    'lift-peg-upright': [1],
+    'poke-cube': [5],
+    'pick-place': [25],
 }
 
+ALGORITHMS = [
+    "Modem2 + DrS",
+    "Modem2",
+    "TDMPC2",
+]
 
 def main():
     set_style()
 
-    # tasks = TASKS
-    tasks = [
-        'stand',
-        # 'walk',
-        # 'run',
-        # 'reach',
-        'corridor',
-        'hurdles-corridor',
-        'walls-corridor',
-        'gaps-corridor',
-        'stairs-corridor',
-        # 'pick-box',
-    ]
+    tasks = list(TASKS_DEMOS.keys())
+
     print('Tasks:', tasks)
     print('Number of tasks:', len(tasks))
 
-    exp_names = EXP_TO_LABEL.keys()
+    exp_names = ALGORITHMS
     exp_name_to_runs = {exp_name: {
-            task: get_results(PATH / 'csv' / exp_name / f'{task}.csv') for task in tasks}
+            task: get_results(PATH / 'csv' / ALGO_TO_LABEL[exp_name] / f'{task}-semi.csv') for task in tasks}
         for exp_name in exp_names
     }
 
-    # average over tasks
+    # average over seeds
     for exp_name in exp_names:
         results = exp_name_to_runs[exp_name]
         for task in tasks:
             df = results[task]
+            df = df[df['n_demos'].isin(TASKS_DEMOS[task])].copy() if df is not None else None
             if df is None:
                 continue
-            df['reward'] = df['reward'] * 100 / MAX_RETURN[task]
+            df['success'] = df['success'] * 100
             df['task'] = task
+            results[task] = df
         results['average'] = pd.concat([df for df in results.values() if df is not None], ignore_index=True)
-        results['average'] = results['average'].groupby(['step', 'seed']).agg({'reward': 'mean'}).reset_index()
+        results['average'] = results['average'].groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
     # prepend average to tasks
     tasks = ['average'] + tasks
 
-    # f, axs = plt.subplots(1, 5, figsize=(18, 3.4), sharex=True, sharey=True)
+    #f, axs = plt.subplots(1, 5, figsize=(18, 3.4), sharex=True, sharey=True)
     f, axs = plt.subplots(2, 5, figsize=(18, 6), sharex=True, sharey=True)
     axs = axs.flatten()
 
@@ -97,20 +72,20 @@ def main():
         
         for j, task in enumerate(tasks):
             df = results[task]
-            # if df is None:
-            #     continue
+            if df is None:
+                continue
             # df['reward'] = df['reward'] * 100 / MAX_RETURN[task]
             ax = axs[j]
             sns.lineplot(
                 x='step',
-                y='reward',
+                y='success',
                 data=df,
                 ax=ax,
                 errorbar=('ci', 95),
                 legend=False,
-                label=EXP_TO_LABEL.get(exp_name, exp_name),
-                color=COLORS[EXP_TO_COLOR[exp_name]],
-                linewidth=4 if exp_name == 'tdmpc2' else 3,
+                label=ALGO_TO_LABEL.get(exp_name, exp_name),
+                color=COLORS[ALGO_TO_COLOR[exp_name]],
+                linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
                 err_kws={'alpha': 0.1},
             )
             # make title bold if average
@@ -120,9 +95,9 @@ def main():
                 ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title())
             ax.set_xlabel(None)
             ax.set_ylabel(None)
-            ax.set_xlim(0, 3)
-            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('M' if x > 0 else '')))
-            ax.xaxis.set_major_locator(plt.MultipleLocator(1))
+            ax.set_xlim(0, 500)
+            ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
+            ax.xaxis.set_major_locator(plt.MultipleLocator(500))
             ax.set_ylim(0, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))

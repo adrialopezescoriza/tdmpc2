@@ -27,8 +27,7 @@ DEFAULT_RC = {
 	'ytick.color': '#333',
     'lines.linewidth': 3,
 }
-ENTITY = 'nicklashansen'
-PROJECT = 'tdmpc2-turbo'
+
 PATH = Path(os.path.dirname(os.path.abspath(__file__)))
 SAVE_PATH_PDF = PATH / 'figures'
 SAVE_PATH_PNG = PATH / 'output'
@@ -47,6 +46,23 @@ COLORS = [
     '#abacab',
 ]
 
+ALGO_TO_LABEL = {
+    # 'sac': 'SAC',
+    # 'sac-lowlevel-tdmpc2': 'SAC w/ LL TD-MPC$\\bf{2}$',
+    'Modem2 + DrS': 'Ours',
+    'Modem2': 'Modem2',
+    'TDMPC2': 'TDMPC2',
+}
+ALGO_TO_COLOR = {
+    # 'sac': -1,
+    # 'sac-lowlevel-tdmpc2': 2,
+    'baseline': 1,
+    'Modem2 + DrS': 0,
+    'Modem2': 3,
+    'TDMPC2': 4,
+}
+
+
 
 def set_style():
     matplotlib.use('agg')
@@ -55,9 +71,7 @@ def set_style():
     sns.set_palette(sns.color_palette(COLORS))
 
 
-def get_runs(entity=None, project=None, tasks=None, verbose=True, **kwargs):
-    entity = entity or ENTITY
-    project = project or PROJECT
+def get_runs(entity, project, tasks=None, verbose=True, **kwargs):
     api = wandb.Api(timeout=60)
     if tasks:
         kwargs['filters'] = {'$or': [{'config.task': task} for task in tasks]}
@@ -82,7 +96,7 @@ def get_results(fp):
         print(f'Error reading {fp}: {e}')
         return None
     try:
-        df['step'] = df['step'] / 1e6
+        df['step'] = df['step'] / 1e3
     except:
         pass
     return df
