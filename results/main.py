@@ -12,7 +12,9 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-TASKS_DEMOS = {
+MAX_STEPS = 200
+
+TASKS_DEMOS_MANISKILL = {
     'stack-cube': [25],
     'peg-insertion': [100],
     'lift-peg-upright': [1],
@@ -20,11 +22,22 @@ TASKS_DEMOS = {
     'pick-place': [25],
 }
 
+TASKS_DEMOS_METAWORLD = {
+    'mw-assembly': [1],
+    'mw-peg-insert-side': [5],
+    'mw-pick-place': [5],
+    'mw-stick-push': [5],
+    'mw-stick-pull': [5],
+}
+
 ALGORITHMS = [
     "Modem2 + DrS",
     "Modem2",
     "TDMPC2",
+    "TDMPC2 + DrS",
 ]
+
+TASKS_DEMOS = TASKS_DEMOS_METAWORLD
 
 def main():
     set_style()
@@ -45,7 +58,7 @@ def main():
         results = exp_name_to_runs[exp_name]
         for task in tasks:
             df = results[task]
-            df = df[df['n_demos'].isin(TASKS_DEMOS[task])].copy() if df is not None else None
+            df = df[df['n_demos'].isin(TASKS_DEMOS[task] + [0])].copy() if df is not None else None
             if df is None:
                 continue
             df['success'] = df['success'] * 100
@@ -57,7 +70,7 @@ def main():
     tasks = ['average'] + tasks
 
     #f, axs = plt.subplots(1, 5, figsize=(18, 3.4), sharex=True, sharey=True)
-    f, axs = plt.subplots(2, 5, figsize=(18, 6), sharex=True, sharey=True)
+    f, axs = plt.subplots(2, 3, figsize=(15, 6), sharex=True, sharey=True)
     axs = axs.flatten()
 
     # manually delete the last few subplots
@@ -95,9 +108,9 @@ def main():
                 ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title())
             ax.set_xlabel(None)
             ax.set_ylabel(None)
-            ax.set_xlim(0, 500)
+            ax.set_xlim(0, MAX_STEPS)
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
-            ax.xaxis.set_major_locator(plt.MultipleLocator(500))
+            ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS))
             ax.set_ylim(0, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))

@@ -52,14 +52,17 @@ ALGO_TO_LABEL = {
     'Modem2 + DrS': 'Ours',
     'Modem2': 'Modem2',
     'TDMPC2': 'TDMPC2',
+    'TDMPC2 + DrS': 'TDMPC2+DrS',
+    'Modem': 'Modem'
 }
 ALGO_TO_COLOR = {
     # 'sac': -1,
     # 'sac-lowlevel-tdmpc2': 2,
-    'baseline': 1,
+    'TDMPC2 + DrS': 1,
     'Modem2 + DrS': 0,
     'Modem2': 3,
     'TDMPC2': 4,
+    'Modem': 5
 }
 
 

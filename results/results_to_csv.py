@@ -9,10 +9,14 @@ from results import *
 STEPS = 500_192
 
 SEEDS = [0,1,2]
-TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi"]
-ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2"]
+MANISKILL_TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi"]
+METAWORLD_TASKS = ["mw-assembly-semi", "mw-peg-insert-side-semi", "mw-stick-push-semi", "mw-stick-pull-semi", "mw-pick-place-semi"]
+TASKS = METAWORLD_TASKS
+ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
+OBS = 'rgbd'
+NUM_ENVS = 1
 ENTITY = 'alopez'
-PROJECT = 'maniskill3'
+PROJECT = 'metaworld' 
 
 def get_avg_df(runs, group, key, task, algorithm):
     if len(runs) == 0:
@@ -95,7 +99,7 @@ def results_to_csv(group='eval', key='episode_success'):
 
     for task in TASKS:
         for algo in ALGORITHMS:
-            runs_ = filter_runs(runs, task=task, algorithm=algo)
+            runs_ = filter_runs(runs, task=task, algorithm=algo, obs=OBS, num_envs=NUM_ENVS)
             df = get_avg_df(runs_, group, key, task, algo)
 
 
