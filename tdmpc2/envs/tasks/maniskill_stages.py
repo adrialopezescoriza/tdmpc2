@@ -4,10 +4,26 @@ from mani_skill.agents.registration import register_agent
 from mani_skill.sensors.camera import CameraConfig
 from mani_skill.agents.robots.panda import PandaWristCam
 from mani_skill.utils import sapien_utils
+import gymnasium as gym
 import numpy as np
 import torch
 import sapien
 from typing import Union
+from envs.utils import convert_observation_to_space, flatten_space
+
+class MultiRobotWrapper(gym.ActionWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.action_space = flatten_space(env.action_space)
+        self.single_action_space = flatten_space(env.single_action_space)
+
+    def action(self, action):
+        ac = {}
+        counter = 0
+        for k, v in self.env.action_space.items():
+            ac[k] = action[..., counter:counter+v.shape[-1]]
+            counter += v.shape[-1]
+        return ac
 
 @register_agent()
 class PandaWristCamPegCustom(PandaWristCam):
@@ -249,11 +265,14 @@ class TwoRobotPickCube_DrS_learn(DrS_BaseEnv, TwoRobotPickCube):
             <= self.goal_thresh
         )
 
+        is_right_arm_static = self.right_agent.is_static(0.2)
+
         return {
             "is_cube_reachable": cube_at_other_side,
             "is_cube_grasped": is_grasped,
-            "is_cube_placed": is_obj_placed,
-            "success": torch.logical_and(is_obj_placed, self.right_agent.is_static()),
+            "is_obj_placed": is_obj_placed,
+            "is_right_arm_static": is_right_arm_static,
+            "success": torch.logical_and(is_obj_placed, is_right_arm_static),
         }
 
     def compute_stage_indicator(self):
@@ -261,7 +280,7 @@ class TwoRobotPickCube_DrS_learn(DrS_BaseEnv, TwoRobotPickCube):
         return {
             'stage_1': (torch.logical_or(eval_info["is_cube_reachable"], eval_info["success"])).float(), # allow releasing the cube when stacked
             'stage_2': (torch.logical_or(eval_info["is_cube_grasped"], eval_info["success"])).float(),
-            'stage_3': (torch.logical_or(eval_info["is_cube_placed"], eval_info["success"])).float(),
+            'stage_3': (torch.logical_or(eval_info["is_obj_placed"], eval_info["success"])).float(),
         }
     
 ############################################

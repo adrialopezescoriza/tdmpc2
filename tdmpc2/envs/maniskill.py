@@ -41,6 +41,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'two-robot-pick-cube': dict(
+		env='TwoRobotPickCube_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
 	'lift-peg-upright': dict(
 		env='LiftPegUpright_DrS_learn',
 		control_mode='pd_ee_delta_pose',
@@ -77,20 +82,10 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'pick-place-drS': dict (
-		env='PickAndPlace_DrS_learn',
+	'two-robot-pick-cube-semi': dict(
+		env='TwoRobotPickCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
-		reward_mode='drS', 
-	),
-	'stack-cube-drS': dict (
-		env='StackCube_DrS_learn',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='drS', 
-	),
-	'peg-insertion-drS': dict (
-		env='PegInsertionSide_DrS_learn',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='drS', 
+		reward_mode='semi_sparse',
 	),
 }
 
@@ -114,8 +109,11 @@ def select_obs(keys, obs):
 		elif k == "image":
 			# Only take rgb + Put channel dimension first
 			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
-			# processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
-			processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
+			if 'hand_camera' in obs['sensor_data'].keys():
+				processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
+			elif 'ext_camera' in obs['sensor_data'].keys():
+				processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
+
 		else:
 			return NotImplementedError
 	return processed
@@ -206,6 +204,9 @@ def make_env(cfg):
 		sim_backend=cfg.maniskill.get("sim_backend", "auto"),
 		render_backend="auto",
 	)
+
+	if isinstance(env.action_space, gym.spaces.Dict):
+		env = envs.tasks.maniskill_stages.MultiRobotWrapper(env)
 
 	cfg.action_penalty = cfg.maniskill.action_penalty
 	if isinstance(cfg.max_bc_steps, str):
