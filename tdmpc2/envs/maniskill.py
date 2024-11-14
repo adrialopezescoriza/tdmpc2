@@ -46,6 +46,11 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'two-robot-stack-cube': dict(
+		env='TwoRobotPickCube_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='dense',
+	),
 	'lift-peg-upright': dict(
 		env='LiftPegUpright_DrS_learn',
 		control_mode='pd_ee_delta_pose',
@@ -84,6 +89,11 @@ MANISKILL_TASKS = {
 	),
 	'two-robot-pick-cube-semi': dict(
 		env='TwoRobotPickCube_DrS_learn',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse',
+	),
+	'two-robot-stack-cube-semi': dict(
+		env='TwoRobotStackCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),

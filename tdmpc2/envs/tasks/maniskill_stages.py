@@ -284,6 +284,26 @@ class TwoRobotPickCube_DrS_learn(DrS_BaseEnv, TwoRobotPickCube):
         }
     
 ############################################
+# Two Robot StackCube
+############################################
+
+from mani_skill.envs.tasks.tabletop.two_robot_stack_cube import TwoRobotStackCube
+
+@register_env("TwoRobotStackCube_DrS_learn", max_episode_steps=100)
+class TwoRobotStackCube_DrS_learn(DrS_BaseEnv, TwoRobotStackCube):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 4
+        super().__init__(*args, **kwargs)
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        return {
+            'stage_1': (torch.logical_or(eval_info["cubeB_placed"], eval_info["success"])).float(), # allow releasing the cube when stacked
+            'stage_2': (torch.logical_or(eval_info["is_cubeA_grasped"], eval_info["success"])).float(),
+            'stage_3': (torch.logical_or(eval_info["is_cubeA_on_cubeB"], eval_info["success"])).float(),
+        }
+    
+############################################
 # Poke Cube
 ############################################
 
