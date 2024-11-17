@@ -190,7 +190,7 @@ class DrsTrainer(Trainer):
 
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				self._alpha = max(0, self.cfg.max_bc_steps - self._step)
+				self._alpha = max(0, self.cfg.max_bc_steps - self._step) / self.cfg.max_bc_steps
 				if np.random.random() < self._alpha and self.cfg.get("policy_pretraining", False):
 					action = self.agent.policy_action(obs, eval_mode=True)
 				else:
