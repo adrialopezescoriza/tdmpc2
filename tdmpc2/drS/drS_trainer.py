@@ -188,9 +188,9 @@ class DrsTrainer(Trainer):
 				obs = self.env.reset(seed=self.seed_scheduler.sample())
 				self._tds = [self.to_td(obs, device='cpu')]
 
+			self._alpha = max(0, self.cfg.max_bc_steps - self._step) / self.cfg.max_bc_steps	
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				self._alpha = max(0, self.cfg.max_bc_steps - self._step) / self.cfg.max_bc_steps
 				if np.random.random() < self._alpha and self.cfg.get("policy_pretraining", False):
 					action = self.agent.policy_action(obs, eval_mode=True)
 				else:
