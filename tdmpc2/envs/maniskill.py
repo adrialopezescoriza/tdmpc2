@@ -47,7 +47,7 @@ MANISKILL_TASKS = {
 		reward_mode='dense',
 	),
 	'two-robot-stack-cube': dict(
-		env='TwoRobotPickCube_DrS_learn',
+		env='TwoRobotStackCube_DrS_learn',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
