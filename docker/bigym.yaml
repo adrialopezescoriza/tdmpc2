@@ -37,4 +37,5 @@ dependencies:
     - matplotlib==3.7.5
     - seaborn==0.13.2
     - gpustat==1.1.1
-    - git+https://github.com/adrialopezescoriza/bigym.git#egg=bigym
+    - git+https://github.com/chernyadev/bigym.git#egg=bigym
+    - git+https://github.com/ARISE-Initiative/robosuite.git@f8cc81901aacd2a1cf52ca38dab126a5e0735fcf#egg=robosuite

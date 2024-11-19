@@ -98,10 +98,6 @@ class PickAndPlace_DrS_learn(DrS_BaseEnv, PickCubeEnv):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
 
-    def check_obj_placed(self):
-        obj_to_goal_pos = self.goal_pos - self.obj_pose.p
-        return np.linalg.norm(obj_to_goal_pos) <= self.goal_thresh
-
     def compute_stage_indicator(self):
         eval_info = self.evaluate()
         return {

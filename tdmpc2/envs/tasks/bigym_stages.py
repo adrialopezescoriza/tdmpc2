@@ -177,10 +177,9 @@ class DrawerTopOpenStages(BiGymStages, DrawerTopOpen):
                         0.27309757, 0.47346738, 1.4556292 , 0.24234204, 0.        ,
                         1.        ])
         
-        low_[:-2] = -np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
-        high_[:-2] = np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
+        tolerance = 1e-5
         
-        self.action_space_ = Box(low=low_ - 0.01, high=high_ + 0.01)
+        self.action_space_ = Box(low=low_ - tolerance, high=high_ + tolerance)
         self.action_space = copy.deepcopy(self.action_space_)
 
     def compute_stage_indicators(self):
@@ -233,9 +232,6 @@ class MovePlateStages(BiGymStages, MovePlate):
         #                   0.26808703, 0.631871  , 0.103172, 
         #                   0.10693253, 0.12817591, 0.23806447, 
         #                   0.42442662, 1.        , 0.        ])
-        
-        # low_[:-2] = -np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
-        # high_[:-2] = np.maximum(np.abs(low_[:-2]), np.abs(high_[:-2]))
 
         tolerance = 1e-5
         
