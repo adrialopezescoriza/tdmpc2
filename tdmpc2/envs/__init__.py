@@ -21,6 +21,10 @@ try:
 	from envs.bigym import make_env as make_bigym_env
 except:
 	make_bigym_env = missing_dependencies
+try:
+	from envs.robosuite import make_env as make_robosuite_env
+except:
+	make_robosuite_env = missing_dependencies
 
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -57,7 +61,7 @@ def make_env(cfg):
 
 	else:
 		env = None
-		for fn in [make_maniskill_env, make_metaworld_env, make_bigym_env]:
+		for fn in [make_maniskill_env, make_metaworld_env, make_bigym_env, make_robosuite_env]:
 			try:
 				env = fn(cfg)
 				break
