@@ -113,7 +113,7 @@ class RobosuiteTask(gym.Env):
         if self.from_pixels:
             images = {}
             for c in self.cameras:
-                images[self.camera_names[c]] = obs[self.camera_names[c] + "_image"][::-1]
+                images[self.camera_names[c]] = obs[self.camera_names[c] + "_image"][::-1].astype(np.uint8)
                 if self.channels_first:
                     images[self.camera_names[c]] = images[self.camera_names[c]].transpose((2, 0, 1))
             return images

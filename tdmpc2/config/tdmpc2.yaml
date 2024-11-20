@@ -138,6 +138,6 @@ robosuite:
     render_mode: "rgb_array" # "human", "rgb_array"
     obs: ???
     action_penalty: false
-    max_bc_steps: 1e6 #50_000
+    max_bc_steps: 2e3 #50_000
     camera:
         image_size: 128 # 64, 128, 256
