@@ -148,3 +148,11 @@ class RobosuiteTask(gym.Env):
     @property
     def observation_space(self):
         return self._observation_space
+    
+    @property
+    def n_stages(self):
+        return 1
+    
+    @property
+    def reward_mode(self):
+        return "dense" if self.reward_type=="dense" else "semi_sparse"
