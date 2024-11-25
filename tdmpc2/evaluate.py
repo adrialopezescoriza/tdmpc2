@@ -46,6 +46,8 @@ class ObservationConverter(object):
 			self.env_type = "metaworld"
 		elif cfg.task.startswith("bigym"):
 			self.env_type = "bigym"
+		elif cfg.task.startswith("robosuite"):
+			self.env_type = "robosuite"
 		else:
 			self.env_type = "maniskill"
 			if self.obs_flag:
