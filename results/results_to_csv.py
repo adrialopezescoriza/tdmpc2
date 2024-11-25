@@ -11,12 +11,12 @@ STEPS = 500_192
 SEEDS = [0,1,2]
 MANISKILL_TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi"]
 METAWORLD_TASKS = ["mw-assembly-semi", "mw-peg-insert-side-semi", "mw-stick-push-semi", "mw-stick-pull-semi", "mw-pick-place-semi"]
-TASKS = METAWORLD_TASKS
+TASKS = MANISKILL_TASKS
 ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
 OBS = 'rgbd'
 NUM_ENVS = 1
 ENTITY = 'alopez'
-PROJECT = 'metaworld' 
+PROJECT = 'maniskill3' 
 
 def get_avg_df(runs, group, key, task, algorithm):
     if len(runs) == 0:

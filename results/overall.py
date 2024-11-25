@@ -12,15 +12,14 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-MAX_STEPS = 500
-PLOT_STEP = 10 # * 1e3
+MAX_STEPS = 400
 
 TASKS_DEMOS_MANISKILL = {
     'stack-cube': [25],
     'peg-insertion': [100],
-    'lift-peg-upright': [5],
+    'lift-peg-upright': [1],
     'poke-cube': [5],
-    'pick-place': [100],
+    'pick-place': [25],
 }
 
 TASKS_DEMOS_METAWORLD = {
@@ -33,13 +32,13 @@ TASKS_DEMOS_METAWORLD = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    "Modem2",
+    #"Modem2",
     "TDMPC2",
-    "TDMPC2 + DrS",
+    #"TDMPC2 + DrS",
     "Modem",
 ]
 
-TASKS_DEMOS = TASKS_DEMOS_METAWORLD # TASKS_DEMOS_MANISKILL, TASKS_DEMOS_METAWORLD
+TASKS_DEMOS = TASKS_DEMOS_METAWORLD
 # TASKS_DEMOS.update(TASKS_DEMOS_METAWORLD)
 
 def main():
@@ -68,9 +67,7 @@ def main():
             df['task'] = task
             results[task] = df
             try:
-                # Filter to only include steps that are multiples of PLOT_STEP
-                filtered_results = [df[df['step'] % PLOT_STEP == 0] for df in results.values() if df is not None]
-                results['average'] = pd.concat(filtered_results, ignore_index=True)
+                results['average'] = pd.concat([df for df in results.values() if df is not None], ignore_index=True)
                 results['average'] = results['average'].groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
             except:
                 print(f"No results in {exp_name} - {task}")
@@ -111,7 +108,7 @@ def main():
             ax.set_ylabel(None)
             ax.set_xlim(0, MAX_STEPS)
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
-            ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
+            ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS))
             ax.set_ylim(0, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))
