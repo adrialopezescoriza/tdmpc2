@@ -344,3 +344,77 @@ class PokeCube_DrS_learn(DrS_BaseEnv, PokeCubeEnv):
             'stage_1': (torch.logical_or(eval_info["is_peg_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
             'stage_2': (torch.logical_or(eval_info["head_to_cube_dist"] <= (self.cube_half_size + 0.03), eval_info["success"])).float(),
         }
+    
+############################################
+# Humanoid Place Apple
+############################################
+
+from mani_skill.envs.tasks.humanoid import UnitreeG1PlaceAppleInBowlEnv
+
+@register_env("HumanoidPlaceApple_DrS_learn", max_episode_steps=100)
+class HumanoidPlaceApple_DrS_learn(DrS_BaseEnv, UnitreeG1PlaceAppleInBowlEnv):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 3
+        super().__init__(*args, **kwargs)
+
+    def evaluate(self):
+        is_obj_placed = (
+            torch.linalg.norm(self.bowl.pose.p - self.apple.pose.p, axis=1) <= 0.05
+        )
+        hand_outside_bowl = (
+            self.agent.right_tcp.pose.p[:, 2] > self.bowl.pose.p[:, 2] + 0.125
+        )
+        is_grasped = self.agent.right_hand_is_grasping(self.apple, max_angle=110)
+        return {
+            "success": is_obj_placed & hand_outside_bowl,
+            "hand_outside_bowl": hand_outside_bowl,
+            "is_obj_placed": is_obj_placed,
+            "is_grasped": is_grasped,
+        }
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        return {
+            'stage_1': (torch.logical_or(eval_info["is_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
+            'stage_2': eval_info["is_obj_placed"].float(),
+        }
+    
+    @property
+    def _default_sensor_configs(self):
+        return CameraConfig(
+            "base_camera",
+            sapien.Pose(
+                [0.279123, 0.303438, 1.34794], [0.252428, 0.396735, 0.114442, -0.875091]
+            ),
+            128,
+            128,
+            np.pi / 2,
+            0.01,
+            100,
+        )
+    
+############################################
+# Humanoid Transport Box
+############################################
+
+from mani_skill.envs.tasks.humanoid import TransportBoxEnv
+
+@register_env("HumanoidTransportBox_DrS_learn", max_episode_steps=100)
+class TransportBox_DrS_learn(DrS_BaseEnv, TransportBoxEnv):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 3
+        super().__init__(*args, **kwargs)
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        return {
+            'stage_1': (torch.logical_or(eval_info["box_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
+            'stage_2': (torch.logical_or(eval_info["facing_table_with_box"], eval_info["success"])).float(),
+        }
+    
+    @property
+    def _default_sensor_configs(self):
+        pose = sapien_utils.look_at([1.0, 0.0, 1.6], [0, 0.0, 0.65])
+        return [
+            CameraConfig("base_camera", pose=pose, width=128, height=128, fov=np.pi / 3)
+        ]

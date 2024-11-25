@@ -61,6 +61,16 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
+	'humanoid-place-apple': dict(
+		env='HumanoidPlaceApple_DrS_learn',
+		control_mode='pd_joint_delta_pos',
+		reward_mode='dense',
+	),
+	'humanoid-transport-box': dict(
+		env='HumanoidTransportBox_DrS_learn',
+		control_mode='pd_joint_delta_pos',
+		reward_mode='dense',
+	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
 		env='PickAndPlace_DrS_learn',
@@ -97,6 +107,16 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
+	'humanoid-place-apple-semi': dict(
+		env='HumanoidPlaceApple_DrS_learn',
+		control_mode='pd_joint_delta_pos',
+		reward_mode='semi_sparse',
+	),
+	'humanoid-transport-box-semi': dict(
+		env='HumanoidTransportBox_DrS_learn',
+		control_mode='pd_joint_delta_pos',
+		reward_mode='semi_sparse',
+	),
 }
 
 def select_obs(keys, obs):
@@ -121,6 +141,8 @@ def select_obs(keys, obs):
 			processed["rgb_base"] = obs['sensor_data']['base_camera']['rgb'].permute(0,3,1,2)
 			if 'hand_camera' in obs['sensor_data'].keys():
 				processed["rgb_hand"] = obs['sensor_data']['hand_camera']['rgb'].permute(0,3,1,2)
+			elif 'head_camera' in obs['sensor_data'].keys():
+				processed["rgb_head"] = obs['sensor_data']['head_camera']['rgb'].permute(0,3,1,2)
 			elif 'ext_camera' in obs['sensor_data'].keys():
 				processed["rgb_ext"] = obs['sensor_data']['ext_camera']['rgb'].permute(0,3,1,2)
 
