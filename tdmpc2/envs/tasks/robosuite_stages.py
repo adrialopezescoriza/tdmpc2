@@ -123,7 +123,9 @@ class RobosuiteTask(gym.Env):
     def step(self, action):
         obs, reward, done, info = self._env.step(action)
         obs = self._unpack_obs(obs)
-        info["success"] = self._env._check_success().item()
+        info["success"] = self._env._check_success()
+        if isinstance(info["success"], np.bool_):
+            info["success"] = info["success"].item()
         return obs, reward, False, False, info
     
     def reward(self):
