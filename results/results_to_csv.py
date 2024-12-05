@@ -9,14 +9,15 @@ from results import *
 STEPS = 500_192
 
 SEEDS = [0,1,2]
-MANISKILL_TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi"]
+MANISKILL_TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi", "humanoid-place-apple-semi", "humanoid-transport-box-semi"]
 METAWORLD_TASKS = ["mw-assembly-semi", "mw-peg-insert-side-semi", "mw-stick-push-semi", "mw-stick-pull-semi", "mw-pick-place-semi"]
-TASKS = MANISKILL_TASKS
-ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
+ROBOSUITE_TASKS = ["robosuite-door-semi", "robosuite-stack-semi", "robosuite-pick-place-can-semi", "robosuite-lift-semi"]
+TASKS = ROBOSUITE_TASKS
+ALGORITHMS = ["Modem2 + DrS"]#, "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
 OBS = 'rgbd'
 NUM_ENVS = 1
 ENTITY = 'alopez'
-PROJECT = 'maniskill3' 
+PROJECT = 'robosuite' 
 
 def get_avg_df(runs, group, key, task, algorithm):
     if len(runs) == 0:
@@ -29,6 +30,7 @@ def get_avg_df(runs, group, key, task, algorithm):
         objects = run.config.get('n_demos')
         seed = run.config.get('seed')
         df['seed'] = seed
+        #df["success"] = df["stage_1_success"]
         if len(df) == 0:
             continue
         if not objects in data:
@@ -94,7 +96,7 @@ def get_avg_df(runs, group, key, task, algorithm):
     print('Average success rate:', float(df['success'].mean()))
 
 
-def results_to_csv(group='eval', key='episode_success'):
+def results_to_csv(group='eval', key='success'):
     runs = get_runs(entity=ENTITY, project=PROJECT)
 
     for task in TASKS:

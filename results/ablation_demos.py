@@ -20,21 +20,21 @@ TASKS_DEMOS_MANISKILL = {
     'peg-insertion': [5,25,50,100,200],
     # 'lift-peg-upright': [1,5,25,100,100],
     # 'poke-cube': [1,5,25,100,100],
-    # 'pick-place': [1,5,25,100,100],
+    #'pick-place': [1,5,25,100,100],
 }
 
 TASKS_DEMOS_METAWORLD = {
-    'mw-assembly': [1,5,25,50,100],
-    'mw-peg-insert-side': [1,5,25,50,100],
-    'mw-pick-place': [1,5,25,50,100],
-    'mw-stick-push': [1,5,25,50,100],
-    'mw-stick-pull': [1,5,25,50,100],
+    'mw-assembly': [1,5,10,20,50],
+    'mw-peg-insert-side': [1,5,10,20,50],
+    'mw-pick-place': [1,5,10,20,50],
+    'mw-stick-push': [1,5,10,20,50],
+    'mw-stick-pull': [1,5,10,20,50],
 }
 
 ALGORITHMS = [
     "Modem2 + DrS",
     #"Modem2",
-    "TDMPC2",
+    #"TDMPC2",
     #"TDMPC2 + DrS",
     "Modem",
 ]

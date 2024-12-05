@@ -47,22 +47,20 @@ COLORS = [
 ]
 
 ALGO_TO_LABEL = {
-    # 'sac': 'SAC',
-    # 'sac-lowlevel-tdmpc2': 'SAC w/ LL TD-MPC$\\bf{2}$',
     'Modem2 + DrS': 'Ours',
-    'Modem2': 'Modem2',
+    'Modem2': 'Ours-DrS',
     'TDMPC2': 'TDMPC2',
-    'TDMPC2 + DrS': 'TDMPC2+DrS',
-    'Modem': 'Modem'
+    'TDMPC2 + DrS': 'Ours-Modem',
+    'Modem': 'Modem',
+    'LaNE': 'LaNE',
 }
 ALGO_TO_COLOR = {
-    # 'sac': -1,
-    # 'sac-lowlevel-tdmpc2': 2,
     'TDMPC2 + DrS': 1,
     'Modem2 + DrS': 0,
     'Modem2': 3,
     'TDMPC2': 4,
-    'Modem': 5
+    'Modem': 5,
+    'LaNE': 6,
 }
 
 

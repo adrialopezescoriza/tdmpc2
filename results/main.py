@@ -12,8 +12,8 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-MAX_STEPS = 500
-PLOT_STEP = 10 # * 1e3
+MAX_STEPS = 100
+PLOT_STEP = 2 # * 1e3
 
 TASKS_DEMOS_MANISKILL = {
     'stack-cube': [25],
@@ -21,6 +21,11 @@ TASKS_DEMOS_MANISKILL = {
     'lift-peg-upright': [5],
     'poke-cube': [5],
     'pick-place': [100],
+}
+
+TASKS_DEMOS_HUMANOIDS = {
+    'humanoid-place-apple': [5],
+    'humanoid-transport-box': [50],
 }
 
 TASKS_DEMOS_METAWORLD = {
@@ -31,15 +36,23 @@ TASKS_DEMOS_METAWORLD = {
     'mw-stick-pull': [5],
 }
 
+TASKS_DEMOS_ROBOSUITE = {
+    'robosuite-lift': [5],
+    'robosuite-door': [10],
+    'robosuite-pick-place-can': [20],
+    'robosuite-stack': [10],
+}
+
 ALGORITHMS = [
     "Modem2 + DrS",
-    "Modem2",
+    #"Modem2",
     "TDMPC2",
-    "TDMPC2 + DrS",
+    #"TDMPC2 + DrS",
     "Modem",
+    "LaNE",
 ]
 
-TASKS_DEMOS = TASKS_DEMOS_METAWORLD # TASKS_DEMOS_MANISKILL, TASKS_DEMOS_METAWORLD
+TASKS_DEMOS = TASKS_DEMOS_ROBOSUITE # TASKS_DEMOS_MANISKILL, TASKS_DEMOS_METAWORLD
 # TASKS_DEMOS.update(TASKS_DEMOS_METAWORLD)
 
 def main():
@@ -56,24 +69,27 @@ def main():
         for exp_name in exp_names
     }
 
-    # average over seeds
     for exp_name in exp_names:
         results = exp_name_to_runs[exp_name]
         for task in tasks:
             df = results[task]
-            df = df[df['n_demos'].isin(TASKS_DEMOS[task] + [0])].copy() if df is not None else None
             if df is None:
                 continue
+            # Filter rows based on step and n_demos
+            df = df[df['n_demos'].isin(TASKS_DEMOS[task] + [0])].copy()
+            df = df[df['step'] % PLOT_STEP == 0]  # Filter for PLOT_STEP
             df['success'] = df['success'] * 100
             df['task'] = task
             results[task] = df
-            try:
-                # Filter to only include steps that are multiples of PLOT_STEP
-                filtered_results = [df[df['step'] % PLOT_STEP == 0] for df in results.values() if df is not None]
-                results['average'] = pd.concat(filtered_results, ignore_index=True)
-                results['average'] = results['average'].groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
-            except:
-                print(f"No results in {exp_name} - {task}")
+
+        # Combine filtered data for averaging
+        try:
+            filtered_results = [df for df in results.values() if df is not None]
+            results['average'] = pd.concat(filtered_results, ignore_index=True)
+            results['average'] = results['average'].groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
+        except Exception as e:
+            print(f"Error processing {exp_name}: {e}")
+
     # prepend average to tasks
     tasks = ['average'] + tasks
 
@@ -95,7 +111,7 @@ def main():
                 y='success',
                 data=df,
                 ax=ax,
-                errorbar=('ci', 95),
+                errorbar=('ci', 75),
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],

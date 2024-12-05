@@ -8,35 +8,35 @@ from collections import defaultdict
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-MAX_STEPS = 500
+MAX_STEPS = 200
 PLOT_STEP = 1
 
 TASKS_DEMOS_MANISKILL = {
-    'stack-cube': [5, 25, 100, 200],
-    'peg-insertion': [100],
-    'lift-peg-upright': [5, 25, 100, 200],
-    'poke-cube': [5, 25, 100, 200],
-    'pick-place': [5, 25, 100, 200],
+    #'stack-cube': [5, 25, 50, 100, 200],
+    #'peg-insertion': [5, 25, 100, 200],
+    'lift-peg-upright': [1,5,25],
+    #'poke-cube': [5, 25, 100, 200],
+    #'pick-place': [5, 25,50, 100],
 }
 
 TASKS_DEMOS_METAWORLD = {
-    'mw-assembly': [1, 5, 25, 50, 100],
-    'mw-peg-insert-side': [1, 5, 25, 50, 100],
-    'mw-pick-place': [1, 5, 25, 50, 100],
-    'mw-stick-push': [1, 5, 25, 50, 100],
-    'mw-stick-pull': [1, 5, 25, 50, 100],
+    'mw-assembly': [1, 5, 10, 20, 50],
+    'mw-peg-insert-side': [1, 5, 10, 20, 50],
+    'mw-pick-place': [1, 5, 10, 20, 50],
+    #'mw-stick-push': [1, 5, 10, 20, 50],
+    #'mw-stick-pull': [1, 5, 10, 20, 50],
 }
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    "Modem2",
+    #"Modem2",
     # "TDMPC2",
-    "TDMPC2 + DrS",
+    #"TDMPC2 + DrS",
     #"Modem",
 ]
 
 TASKS_DEMOS = TASKS_DEMOS_METAWORLD
-TASKS_DEMOS.update(TASKS_DEMOS_MANISKILL)
+#TASKS_DEMOS.update(TASKS_DEMOS_MANISKILL)
 
 def compute_step_to_reach_50(df):
     """Compute the step at which success rate crosses 50%."""
