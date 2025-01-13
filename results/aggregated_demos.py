@@ -2,19 +2,20 @@ import os
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import seaborn as sns
 from collections import defaultdict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-MAX_STEPS = 200
+MAX_STEPS = 500
 PLOT_STEP = 1
 
 TASKS_DEMOS_MANISKILL = {
-    #'stack-cube': [5, 25, 50, 100, 200],
-    #'peg-insertion': [5, 25, 100, 200],
-    'lift-peg-upright': [1,5,25],
+    'stack-cube': [5, 10, 25, 50, 100, 200],
+    'peg-insertion': [5, 25, 100, 200],
+    #'lift-peg-upright': [1,5,25],
     #'poke-cube': [5, 25, 100, 200],
     #'pick-place': [5, 25,50, 100],
 }
@@ -29,22 +30,22 @@ TASKS_DEMOS_METAWORLD = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    #"Modem2",
+    "Modem2",
     # "TDMPC2",
-    #"TDMPC2 + DrS",
-    #"Modem",
+    "TDMPC2 + DrS",
+    "Modem",
 ]
 
-TASKS_DEMOS = TASKS_DEMOS_METAWORLD
+TASKS_DEMOS = TASKS_DEMOS_MANISKILL
 #TASKS_DEMOS.update(TASKS_DEMOS_MANISKILL)
 
-def compute_step_to_reach_50(df):
+def compute_step_to_reach_30(df):
     """Compute the step at which success rate crosses 50%."""
     df_avg = df.groupby('step').agg({'success': 'mean'}).reset_index()
-    above_50 = df_avg[df_avg['success'] >= 50]
-    if not above_50.empty:
-        return above_50.iloc[0]['step']  # First step where success crosses 50%
-    return None  # If 50% is never reached
+    above_30 = df_avg[df_avg['success'] >= 30]
+    if not above_30.empty:
+        return above_30.iloc[0]['step']  # First step where success crosses 50%
+    return MAX_STEPS  # If 50% is never reached
 
 def main():
     set_style()
@@ -88,7 +89,7 @@ def main():
         for n_demos, demo_dfs in all_demos_results.items():
             combined_demo_results = pd.concat(demo_dfs, ignore_index=True)
             demo_avg = combined_demo_results.groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
-            step = compute_step_to_reach_50(demo_avg)
+            step = compute_step_to_reach_30(demo_avg)
             step_to_reach_50[exp_name][n_demos] = step
 
     # Plot step to reach 50% success
@@ -104,17 +105,42 @@ def main():
             x_ticks,
             steps,
             label=ALGO_TO_LABEL.get(exp_name, exp_name),
-            marker='o',
-            linewidth=3,
+            color=COLORS[ALGO_TO_COLOR[exp_name]],
+            linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
         )
+    
+    # Update the font properties for "Ours"
+    legend_labels = []
+    font_properties = []
+    for exp_name in exp_names:
+        if ALGO_TO_LABEL.get(exp_name, exp_name) == "Ours":
+            # Use a bold font for "Ours"
+            font_properties.append(fm.FontProperties(weight="bold", size=14))
+        else:
+            # Use the default font for other labels
+            font_properties.append(fm.FontProperties(size=14))
+        legend_labels.append(ALGO_TO_LABEL.get(exp_name, exp_name))
 
-    plt.title('Steps to Reach 50% Success')
+    plt.title('Steps to Reach 30% Success \u2193')
     plt.xlabel('Number of Demos')
     plt.ylabel('Steps (1e3)')
-    plt.ylim(0, MAX_STEPS)
-    plt.xticks(x_ticks, labels=demo_values)  # Assign demo values to equidistant ticks
-    plt.legend()
+    plt.ylim(0, MAX_STEPS+50)
+    plt.xticks(x_ticks, labels=demo_values) 
+    # Create the legend below the figure
+    legend = plt.legend(
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),  # Position the legend below the plot
+        ncol=len(exp_names),
+        frameon=False,
+    )
+
+    # Apply custom font properties to the legend
+    for text, font in zip(legend.get_texts(), font_properties):
+        text.set_font_properties(font)
+
     plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout(rect=[0, 0.1, 1, 1])  # Adjust layout to leave space for the legend
     save_fig('aggregated_demos')
 
 if __name__ == '__main__':

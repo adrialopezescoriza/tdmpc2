@@ -43,9 +43,9 @@ TASKS_DEMOS_ROBOSUITE = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    #"Modem2",
+    "Modem2",
     "TDMPC2",
-    #"TDMPC2 + DrS",
+    "TDMPC2 + DrS",
     "Modem",
     #"LaNE",
 ]
@@ -148,6 +148,7 @@ def main():
         if len(_h) > len(h):
             h, l = _h, _l
     
+
     # Update the font properties for "Ours"
     legend_labels = []
     font_properties = []
@@ -166,7 +167,7 @@ def main():
         text.set_font_properties(font)
 
     f.subplots_adjust(bottom=0.115, wspace=0.15, hspace=0.375)
-    save_fig(SUITE)
+    save_fig('ablation_algorithms')
 
 
 if __name__ == '__main__':

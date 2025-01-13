@@ -33,13 +33,13 @@ SAVE_PATH_PDF = PATH / 'figures'
 SAVE_PATH_PNG = PATH / 'output'
 SAVE_PATH_CSV = PATH / 'csv'
 COLORS = [
-    'tab:red',
+    'tab:blue',
 	'tab:gray',
 	'black',
     'tab:purple',
-    'tab:brown',
+    'tab:red',
 	'tab:orange',
-	'tab:cyan',
+	'tab:brown',
 	'tab:olive',
 	'xkcd:gold',
 	'xkcd:mint',
@@ -48,9 +48,9 @@ COLORS = [
 
 ALGO_TO_LABEL = {
     'Modem2 + DrS': 'Ours',
-    'Modem2': 'Ours-DrS',
+    'Modem2': 'Ours (no DrS)',
     'TDMPC2': 'TDMPC2',
-    'TDMPC2 + DrS': 'Ours-Modem',
+    'TDMPC2 + DrS': 'Ours (no Modem)',
     'Modem': 'Modem',
     'LaNE': 'LaNE',
 }

@@ -6,24 +6,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.font_manager as fm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
 MAX_STEPS = 500
-PLOT_STEP = 4  # * 1e3
+PLOT_STEP = 1  # * 1e3
 
 TASKS_DEMOS = {
-    "Maniskill": {
+    "Maniskill-Manipulation": {
         'stack-cube': [25],
         'peg-insertion': [100],
         'lift-peg-upright': [5],
         'poke-cube': [5],
         'pick-place': [100],
     },
-    "Humanoids": {
+    "Maniskill-Humanoids": {
         'humanoid-place-apple': [5],
-        'humanoid-transport-box': [5],
+        'humanoid-transport-box': [50],
     },
     "Metaworld": {
         'mw-assembly': [5],
@@ -44,7 +45,16 @@ ALGORITHMS = [
     "Modem2 + DrS",
     "TDMPC2",
     "Modem",
+    "LaNE",
 ]
+
+# Define a dictionary with custom x-axis limits for each domain
+MAX_STEPS_DICT = {
+    "Maniskill-Manipulation": 500,
+    "Maniskill-Humanoids": 100,
+    "Metaworld": 500,
+    "Robosuite": 100,
+}
 
 def pad_to_max_steps(df, max_steps, step_col='step', value_col='success'):
     """
@@ -71,6 +81,7 @@ def main():
 
     # Process results for each domain and task
     for domain, tasks_demos in TASKS_DEMOS.items():
+        max_steps = MAX_STEPS_DICT.get(domain, MAX_STEPS)  # Get domain-specific max_steps
         tasks = list(tasks_demos.keys())
         exp_name_to_runs = {
             exp_name: {
@@ -85,11 +96,10 @@ def main():
                 if df is None:
                     continue
                 df = df[df['n_demos'].isin(demos + [0])].copy()
-                df = pad_to_max_steps(df, MAX_STEPS)
+                df = pad_to_max_steps(df, max_steps)
                 df = df[df['step'] % PLOT_STEP == 0]  # Filter for PLOT_STEP
                 df['success'] = df['success'] * 100
                 df['task'] = task
-                # Pad the data to max steps
                 domain_results[domain][exp_name].append(df)
 
     # Calculate domain averages
@@ -100,28 +110,16 @@ def main():
             avg_df = combined_df.groupby(['step', 'seed', 'task']).agg({'success': 'mean'}).reset_index()
             domain_averages[domain][exp_name] = avg_df
 
-    # Calculate overall average
-    overall_averages = defaultdict(list)
-    for domain, algo_results in domain_averages.items():
-        for exp_name, avg_df in algo_results.items():
-            overall_averages[exp_name].append(avg_df)
-    overall_averages = {
-        exp_name: pd.concat(dfs, ignore_index=True).groupby(['step', 'seed', 'task']).agg({'success': 'mean'}).reset_index()
-        for exp_name, dfs in overall_averages.items()
-    }
-
     # Plot domain results
-    f, axs = plt.subplots(2, 3, figsize=(18, 6), sharex=True, sharey=True)
+    f, axs = plt.subplots(1, 4, figsize=(36, 6))
     axs = axs.flatten()
-    domains = ['Average'] + list(TASKS_DEMOS.keys())
+    domains = list(TASKS_DEMOS.keys())
 
     for i, domain in enumerate(domains):
         ax = axs[i]
-        if domain == 'Average':
-            algo_results = overall_averages
-        else:
-            algo_results = domain_averages[domain]
-        
+        max_steps = MAX_STEPS_DICT.get(domain, MAX_STEPS)  # Domain-specific max_steps
+        algo_results = domain_averages[domain]
+
         for exp_name, avg_df in algo_results.items():
             sns.lineplot(
                 x='step',
@@ -135,16 +133,12 @@ def main():
                 linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
                 err_kws={'alpha': 0.1},
             )
-        # make title bold if average
-        if task == 'Average':
-            ax.set_title(domain.title(), fontweight='bold')
-        else:
-            ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title())
+        ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title())
         ax.set_xlabel(None)
         ax.set_ylabel(None)
-        ax.set_xlim(0, MAX_STEPS)
+        ax.set_xlim(0, max_steps)  # Use domain-specific max_steps
         ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
-        ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
+        ax.xaxis.set_major_locator(plt.MultipleLocator(max_steps / 2))
         ax.set_ylim(0, 100)
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.yaxis.set_major_locator(plt.MultipleLocator(50))
@@ -154,12 +148,26 @@ def main():
         _h, _l = ax.get_legend_handles_labels()
         if len(_h) > len(h):
             h, l = _h, _l
-    f.legend(h, l, loc='lower center', ncol=len(exp_names), frameon=False)
+    
+    # Update the font properties for "Ours"
+    legend_labels = []
+    font_properties = []
+    for label in l:
+        if label == "Ours":
+            # Use a bold font for "Ours"
+            font_properties.append(fm.FontProperties(weight="bold", size=24))
+        else:
+            # Use the default font for other labels
+            font_properties.append(fm.FontProperties(size=24))
+        legend_labels.append(label)
+
+    # Add the custom legend to the figure
+    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
+    for text, font in zip(legend.get_texts(), font_properties):
+        text.set_font_properties(font)
+
     f.subplots_adjust(bottom=0.185, wspace=0.15, hspace=0.375)
-    save_fig('domain_averages')
+    save_fig('overall')
 
 if __name__ == '__main__':
     main()
-
-
-

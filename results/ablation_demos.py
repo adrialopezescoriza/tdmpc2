@@ -3,6 +3,7 @@ import sys
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -13,14 +14,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
 MAX_STEPS = 500
-PLOT_STEP = 10 # x 1e3
+PLOT_STEP = 2 # x 1e3
 
 TASKS_DEMOS_MANISKILL = {
-    # 'stack-cube': [1,5,25,100,100],
+    'stack-cube': [5,10,25,50,100,200],
     'peg-insertion': [5,25,50,100,200],
-    # 'lift-peg-upright': [1,5,25,100,100],
-    # 'poke-cube': [1,5,25,100,100],
-    #'pick-place': [1,5,25,100,100],
+    # 'lift-peg-upright': [1,5,25,100,200],
+    # 'poke-cube': [1,5,25,100,200],
+    #'pick-place': [1,5,25,100,200],
 }
 
 TASKS_DEMOS_METAWORLD = {
@@ -33,9 +34,9 @@ TASKS_DEMOS_METAWORLD = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    #"Modem2",
+    "Modem2",
     #"TDMPC2",
-    #"TDMPC2 + DrS",
+    "TDMPC2 + DrS",
     "Modem",
 ]
 
@@ -87,7 +88,7 @@ def main():
             results['demos'][n_demos] = combined_demo_results.groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
 
     # Plot results
-    f, axs = plt.subplots(2, 3, figsize=(18, 6), sharex=True, sharey=True)
+    f, axs = plt.subplots(2, 3, figsize=(18, 12), sharex=True, sharey=True)
     axs = axs.flatten()
 
     demo_values = sorted({demo for task_demos in TASKS_DEMOS.values() for demo in task_demos})
@@ -107,7 +108,7 @@ def main():
                 y='success',
                 data=df,
                 ax=ax,
-                errorbar=('ci', 95),
+                errorbar=('ci', 75),
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
@@ -130,9 +131,26 @@ def main():
         _h, _l = ax.get_legend_handles_labels()
         if len(_h) > len(h):
             h, l = _h, _l
-    f.legend(h, l, loc='lower center', ncol=len(exp_names), frameon=False)
-    f.subplots_adjust(bottom=0.185, wspace=0.15, hspace=0.375)
-    save_fig('demos_ablation')
+    
+    # Update the font properties for "Ours"
+    legend_labels = []
+    font_properties = []
+    for label in l:
+        if label == "Ours":
+            # Use a bold font for "Ours"
+            font_properties.append(fm.FontProperties(weight="bold", size=24))
+        else:
+            # Use the default font for other labels
+            font_properties.append(fm.FontProperties(size=24))
+        legend_labels.append(label)
+
+    # Add the custom legend to the figure
+    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
+    for text, font in zip(legend.get_texts(), font_properties):
+        text.set_font_properties(font)
+
+    f.subplots_adjust(bottom=0.115, wspace=0.15, hspace=0.375)
+    save_fig('ablation_demos')
 
 
 if __name__ == '__main__':
