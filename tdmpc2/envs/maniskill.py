@@ -117,6 +117,28 @@ MANISKILL_TASKS = {
 		control_mode='pd_joint_delta_pos',
 		reward_mode='semi_sparse',
 	),
+	## 1 and 2 stages
+	'stack-cube-1-stages-semi': dict (
+		env='StackCube_DrS_learn_1_stages',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'peg-insertion-1-stages-semi': dict (
+		env='PegInsertionSide_DrS_learn_1_stages',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'stack-cube-2-stages-semi': dict (
+		env='StackCube_DrS_learn_2_stages',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+	'peg-insertion-2-stages-semi': dict (
+		env='PegInsertionSide_DrS_learn_2_stages',
+		control_mode='pd_ee_delta_pose',
+		reward_mode='semi_sparse', 
+	),
+
 }
 
 def select_obs(keys, obs):

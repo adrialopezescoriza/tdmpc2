@@ -124,6 +124,28 @@ class StackCube_DrS_learn(DrS_BaseEnv, StackCubeEnv):
             'is_cube_A_placed': (torch.logical_or(eval_info["is_cubeA_on_cubeB"], eval_info["success"])).float(),
         }
 
+@register_env("StackCube_DrS_learn_2_stages", max_episode_steps=100)
+class StackCube_DrS_learn_2_stages(DrS_BaseEnv, StackCubeEnv):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 2
+        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        return {
+            'is_grasped': (torch.logical_or(eval_info["is_cubeA_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
+        }
+    
+@register_env("StackCube_DrS_learn_1_stages", max_episode_steps=100)
+class StackCube_DrS_learn_1_stages(DrS_BaseEnv, StackCubeEnv):
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 1
+        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        return {}
+
 ############################################
 # Peg Insertion
 ############################################
@@ -161,6 +183,86 @@ class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
             'is_correctly_grasped': torch.logical_or(stage_1, stage_2).float(), # do this to allow releasing the peg when inserted
             'is_peg_pre_inserted': stage_2.float(),
         }
+
+    @property
+    def _default_sensor_configs(self):
+        # Define all the cameras needed for the environment
+        pose_ext = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4]) # NOTE: Same as render camera
+        pose_base = sapien_utils.look_at([0, -0.4, 0.2], [0, 0, 0.1])
+        return [
+            CameraConfig("base_camera", pose=pose_base, width=128, height=128, fov=np.pi / 2, near=0.01, far=100),
+            CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
+        ]
+
+@register_env("PegInsertionSide_DrS_learn_2_stages", max_episode_steps=100)
+class PegInsertionSide_DrS_learn_2_satges(DrS_BaseEnv, PegInsertionSideEnv):
+    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
+    agent: Union[PandaWristCam, PandaWristCamPegCustom]
+
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 2
+        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
+
+    def is_peg_pre_inserted(self):
+        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
+        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
+            peg_head_wrt_goal.p[:, 1:], axis=1
+        )
+        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
+        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
+
+        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
+        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
+            peg_wrt_goal_yz_dist < 0.01
+        )
+        return pre_inserted
+
+    def compute_stage_indicator(self):
+        success = self.evaluate()["success"]
+        stage_1 = torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)
+        stage_2 = torch.logical_or(self.is_peg_pre_inserted(), success)
+        return {
+            'is_correctly_grasped': torch.logical_or(stage_1, stage_2).float(), # do this to allow releasing the peg when inserted
+        }
+
+    @property
+    def _default_sensor_configs(self):
+        # Define all the cameras needed for the environment
+        pose_ext = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4]) # NOTE: Same as render camera
+        pose_base = sapien_utils.look_at([0, -0.4, 0.2], [0, 0, 0.1])
+        return [
+            CameraConfig("base_camera", pose=pose_base, width=128, height=128, fov=np.pi / 2, near=0.01, far=100),
+            CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
+        ]
+
+@register_env("PegInsertionSide_DrS_learn_1_stages", max_episode_steps=100)
+class PegInsertionSide_DrS_learn_1_satge(DrS_BaseEnv, PegInsertionSideEnv):
+    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
+    agent: Union[PandaWristCam, PandaWristCamPegCustom]
+
+    def __init__(self, *args, **kwargs):
+        self.n_stages = 1
+        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
+
+    def is_peg_pre_inserted(self):
+        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
+        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
+            peg_head_wrt_goal.p[:, 1:], axis=1
+        )
+        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
+        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
+
+        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
+        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
+            peg_wrt_goal_yz_dist < 0.01
+        )
+        return pre_inserted
+
+    def compute_stage_indicator(self):
+        success = self.evaluate()["success"]
+        stage_1 = torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)
+        stage_2 = torch.logical_or(self.is_peg_pre_inserted(), success)
+        return {}
 
     @property
     def _default_sensor_configs(self):
