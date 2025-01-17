@@ -41,12 +41,21 @@ TASKS_DEMOS_ROBOSUITE = {
     'robosuite-stack': [10],
 }
 
+TASK_DEMOS_COMBINED = {
+    'stack-cube': [25],
+    'peg-insertion': [100],
+    'lift-peg-upright': [5],
+    'poke-cube': [5],
+    'pick-place': [100],
+    'mw-assembly': [5],
+    'mw-stick-push': [5],
+    'mw-stick-pull': [5],
+}
+
 ALGORITHMS = [
     "Modem2 + DrS",
-    #"Modem2",
-    "TDMPC2",
-    #"TDMPC2 + DrS",
     "Modem",
+    "TDMPC2",
     #"LaNE",
 ]
 
@@ -55,13 +64,14 @@ SUITE_DICT = {
     "humanoids": TASKS_DEMOS_HUMANOIDS,
     "metaworld": TASKS_DEMOS_METAWORLD,
     "robosuite": TASKS_DEMOS_ROBOSUITE,
+    "combined": TASK_DEMOS_COMBINED,
 } 
 
-SUITE = "maniskill"
+SUITE = "combined"
 TASKS_DEMOS = SUITE_DICT[SUITE] # TASKS_DEMOS_MANISKILL, TASKS_DEMOS_METAWORLD
 # TASKS_DEMOS.update(TASKS_DEMOS_METAWORLD)
 MAX_STEPS = 500
-PLOT_STEP = 1 # * 1e3
+PLOT_STEP = 5 # * 1e3
 
 def main():
     set_style()
@@ -101,10 +111,12 @@ def main():
     # prepend average to tasks
     tasks = ['average'] + tasks
 
-    #f, axs = plt.subplots(1, 3, figsize=(18, 3.4), sharex=False, sharey=True)
+    #f, axs = plt.subplots(1, 3, figsize=(40, 10), sharex=False, sharey=True)
+    #f, axs = plt.subplots(1, 4, figsize=(40, 10), sharex=False, sharey=True)
     #f, axs = plt.subplots(1, 3, figsize=(18, 3.4), sharex=True, sharey=True)
-    f, axs = plt.subplots(2, 3, figsize=(18, 12), sharex=True, sharey=True)
-    #f, axs = plt.subplots(2, 2, figsize=(18, 6), sharex=False, sharey=True)
+    #f, axs = plt.subplots(2, 3, figsize=(28, 12), sharex=True, sharey=True)
+    #f, axs = plt.subplots(2, 2, figsize=(36, 12), sharex=False, sharey=True)
+    f, axs = plt.subplots(3, 3, figsize=(18, 16), sharex=True, sharey=True)
     axs = axs.flatten()
 
     # Plot results
@@ -121,7 +133,7 @@ def main():
                 y='success',
                 data=df,
                 ax=ax,
-                errorbar=('ci', 75),
+                errorbar=('ci', 95),
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
@@ -130,9 +142,9 @@ def main():
             )
             # make title bold if average
             if task == 'average':
-                ax.set_title(task.title(), fontweight='bold')
+                ax.set_title(task.title(), fontweight='bold', fontsize=30)
             else:
-                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title())
+                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title(), fontsize=30)
             ax.set_xlabel(None)
             ax.set_ylabel(None)
             ax.set_xlim(0, MAX_STEPS)
@@ -141,6 +153,9 @@ def main():
             ax.set_ylim(0, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))
+
+            ax.tick_params(axis='x', labelsize=25)
+            ax.tick_params(axis='y', labelsize=25)
     
     h, l = [], []
     for ax in axs:
@@ -154,10 +169,10 @@ def main():
     for label in l:
         if label == "Ours":
             # Use a bold font for "Ours"
-            font_properties.append(fm.FontProperties(weight="bold", size=24))
+            font_properties.append(fm.FontProperties(weight="bold", size=30))
         else:
             # Use the default font for other labels
-            font_properties.append(fm.FontProperties(size=24))
+            font_properties.append(fm.FontProperties(size=30))
         legend_labels.append(label)
 
     # Add the custom legend to the figure
@@ -165,7 +180,7 @@ def main():
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.115, wspace=0.15, hspace=0.375)
+    f.subplots_adjust(bottom=0.15, wspace=0.15, hspace=0.25)
     save_fig(SUITE)
 
 

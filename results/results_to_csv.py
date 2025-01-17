@@ -17,7 +17,7 @@ OBS = 'rgbd'
 NUM_ENVS = 1
 ENTITY = 'alopez'
 ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
-PROJECT = 'metaworld' 
+PROJECT = 'maniskill3' 
 TASKS_DICT = {
     "maniskill3": MANISKILL_TASKS,
     "metaworld": METAWORLD_TASKS,

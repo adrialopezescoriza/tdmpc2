@@ -22,16 +22,16 @@ TASKS_DEMOS = {
         'poke-cube': [5],
         'pick-place': [100],
     },
-    "Maniskill-Humanoids": {
-        'humanoid-place-apple': [5],
-        'humanoid-transport-box': [50],
-    },
     "Metaworld": {
         'mw-assembly': [5],
         'mw-peg-insert-side': [5],
         'mw-pick-place': [5],
         'mw-stick-push': [5],
         'mw-stick-pull': [5],
+    },
+    "Maniskill-Humanoids": {
+        'humanoid-place-apple': [5],
+        'humanoid-transport-box': [50],
     },
     "Robosuite": {
         'robosuite-lift': [5],
@@ -51,9 +51,16 @@ ALGORITHMS = [
 # Define a dictionary with custom x-axis limits for each domain
 MAX_STEPS_DICT = {
     "Maniskill-Manipulation": 500,
-    "Maniskill-Humanoids": 100,
     "Metaworld": 500,
+    "Maniskill-Humanoids": 100,
     "Robosuite": 100,
+}
+
+PLOT_STEP_DICT = {
+    "Maniskill-Manipulation": 5,
+    "Metaworld": 5,
+    "Maniskill-Humanoids": 1,
+    "Robosuite": 1,
 }
 
 def pad_to_max_steps(df, max_steps, step_col='step', value_col='success'):
@@ -97,7 +104,7 @@ def main():
                     continue
                 df = df[df['n_demos'].isin(demos + [0])].copy()
                 df = pad_to_max_steps(df, max_steps)
-                df = df[df['step'] % PLOT_STEP == 0]  # Filter for PLOT_STEP
+                df = df[df['step'] % (MAX_STEPS_DICT[domain] / (100 * PLOT_STEP)) == 0]  # Filter for PLOT_STEP
                 df['success'] = df['success'] * 100
                 df['task'] = task
                 domain_results[domain][exp_name].append(df)
@@ -111,7 +118,7 @@ def main():
             domain_averages[domain][exp_name] = avg_df
 
     # Plot domain results
-    f, axs = plt.subplots(1, 4, figsize=(36, 6))
+    f, axs = plt.subplots(1, 4, figsize=(36, 6), sharey=True)
     axs = axs.flatten()
     domains = list(TASKS_DEMOS.keys())
 
@@ -126,14 +133,14 @@ def main():
                 y='success',
                 data=avg_df,
                 ax=ax,
-                errorbar=('ci', 75),
+                errorbar=('ci', 95),
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
                 linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
                 err_kws={'alpha': 0.1},
             )
-        ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title())
+        ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title(), fontsize=30)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_xlim(0, max_steps)  # Use domain-specific max_steps
@@ -142,6 +149,11 @@ def main():
         ax.set_ylim(0, 100)
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.yaxis.set_major_locator(plt.MultipleLocator(50))
+
+        ax.tick_params(axis='x', labelsize=30)
+        ax.tick_params(axis='y', labelsize=30)
+    
+    #f.supxlabel("Interaction Steps", fontsize=30)
 
     h, l = [], []
     for ax in axs:
@@ -155,10 +167,10 @@ def main():
     for label in l:
         if label == "Ours":
             # Use a bold font for "Ours"
-            font_properties.append(fm.FontProperties(weight="bold", size=24))
+            font_properties.append(fm.FontProperties(weight="bold", size=30))
         else:
             # Use the default font for other labels
-            font_properties.append(fm.FontProperties(size=24))
+            font_properties.append(fm.FontProperties(size=30))
         legend_labels.append(label)
 
     # Add the custom legend to the figure
@@ -166,7 +178,7 @@ def main():
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.185, wspace=0.15, hspace=0.375)
+    f.subplots_adjust(bottom=0.24, wspace=0.15, hspace=0.375)
     save_fig('overall')
 
 if __name__ == '__main__':

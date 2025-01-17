@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
 MAX_STEPS = 500
-PLOT_STEP = 2 # x 1e3
+PLOT_STEP = 5 # x 1e3
 
 TASKS_DEMOS_MANISKILL = {
     'stack-cube': [5,10,25,50,100,200],
@@ -108,7 +108,7 @@ def main():
                 y='success',
                 data=df,
                 ax=ax,
-                errorbar=('ci', 75),
+                errorbar=('ci', 95),
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
@@ -116,7 +116,7 @@ def main():
                 err_kws={'alpha': 0.1},
             )
 
-        ax.set_title(f'{n_demos} demos')
+        ax.set_title(f'{n_demos} demos', fontsize=30)
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_xlim(0, MAX_STEPS)
@@ -125,6 +125,9 @@ def main():
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.yaxis.set_major_locator(plt.MultipleLocator(50))
         ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
+
+        ax.tick_params(axis='x', labelsize=25)
+        ax.tick_params(axis='y', labelsize=25)
 
     h, l = [], []
     for ax in axs:
@@ -138,10 +141,10 @@ def main():
     for label in l:
         if label == "Ours":
             # Use a bold font for "Ours"
-            font_properties.append(fm.FontProperties(weight="bold", size=24))
+            font_properties.append(fm.FontProperties(weight="bold", size=30))
         else:
             # Use the default font for other labels
-            font_properties.append(fm.FontProperties(size=24))
+            font_properties.append(fm.FontProperties(size=30))
         legend_labels.append(label)
 
     # Add the custom legend to the figure
@@ -149,7 +152,7 @@ def main():
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.115, wspace=0.15, hspace=0.375)
+    f.subplots_adjust(bottom=0.15, wspace=0.15, hspace=0.25)
     save_fig('ablation_demos')
 
 
