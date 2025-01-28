@@ -13,10 +13,11 @@ SEEDS = [0, 1, 2, 3, 4]
 MANISKILL_TASKS = ["stack-cube-semi", "peg-insertion-semi", "lift-peg-upright-semi", "poke-cube-semi", "pick-place-semi", "humanoid-place-apple-semi", "humanoid-transport-box-semi"]
 METAWORLD_TASKS = ["mw-assembly-semi", "mw-peg-insert-side-semi", "mw-stick-push-semi", "mw-stick-pull-semi", "mw-pick-place-semi"]
 ROBOSUITE_TASKS = ["robosuite-door-semi", "robosuite-stack-semi", "robosuite-pick-place-can-semi", "robosuite-lift-semi"]
+MANISKILL_STAGES_TASKS = ["stack-cube", "stack-cube-2-stages-semi", "stack-cube-1-stages-semi", "peg-insertion", "peg-insertion-2-stages-semi", "peg-insertion-1-stages-semi"]
 OBS = 'rgbd'
 NUM_ENVS = 1
 ENTITY = 'alopez'
-ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem"]
+ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem", "LaNE"]
 PROJECT = 'maniskill3' 
 TASKS_DICT = {
     "maniskill3": MANISKILL_TASKS,

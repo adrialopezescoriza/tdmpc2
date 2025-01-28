@@ -13,9 +13,6 @@ import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
 
-MAX_STEPS = 500
-PLOT_STEP = 5 # x 1e3
-
 TASKS_DEMOS_MANISKILL = {
     'stack-cube': [5,10,25,50,100,200],
     'peg-insertion': [5,25,50,100,200],
@@ -34,11 +31,13 @@ TASKS_DEMOS_METAWORLD = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    "Modem2",
-    #"TDMPC2",
-    "TDMPC2 + DrS",
     "Modem",
+    "Modem2",
+    "TDMPC2 + DrS",
 ]
+
+MAX_STEPS = 500
+PLOT_STEP = 5 # x 1e3
 
 TASKS_DEMOS = TASKS_DEMOS_MANISKILL
 # TASKS_DEMOS.update(TASKS_DEMOS_MANISKILL)
@@ -88,7 +87,7 @@ def main():
             results['demos'][n_demos] = combined_demo_results.groupby(['step', 'seed']).agg({'success': 'mean'}).reset_index()
 
     # Plot results
-    f, axs = plt.subplots(2, 3, figsize=(18, 12), sharex=True, sharey=True)
+    f, axs = plt.subplots(2, 3, figsize=(22, 14), sharex=True, sharey=True)
     axs = axs.flatten()
 
     demo_values = sorted({demo for task_demos in TASKS_DEMOS.values() for demo in task_demos})
@@ -120,7 +119,7 @@ def main():
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_xlim(0, MAX_STEPS)
-        ax.set_ylim(0, 100)
+        ax.set_ylim(-2, 100)
         ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.yaxis.set_major_locator(plt.MultipleLocator(50))
@@ -134,7 +133,7 @@ def main():
         _h, _l = ax.get_legend_handles_labels()
         if len(_h) > len(h):
             h, l = _h, _l
-    
+
     # Update the font properties for "Ours"
     legend_labels = []
     font_properties = []
@@ -148,11 +147,24 @@ def main():
         legend_labels.append(label)
 
     # Add the custom legend to the figure
-    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
+    legend = f.legend(
+        h, 
+        legend_labels, 
+        loc="lower center", 
+        bbox_to_anchor=(0.5, 0.0),  # Center legend horizontally below the subplots
+        ncol=len(ALGORITHMS),  # Span horizontally
+        frameon=False, 
+        handleheight=1.5,
+    )
+
+    # Adjust line alignment in legend
+    for handle in legend.legend_handles:
+        handle.set_linewidth(6)
+
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.15, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.16, wspace=0.15, hspace=0.25)
     save_fig('ablation_demos')
 
 

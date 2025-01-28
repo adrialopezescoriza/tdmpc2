@@ -47,7 +47,6 @@ ALGORITHMS = [
     "TDMPC2",
     "Modem2",
     "TDMPC2 + DrS",
-    #"LaNE",
 ]
 
 SUITE_DICT = {
@@ -103,7 +102,7 @@ def main():
 
     #f, axs = plt.subplots(1, 3, figsize=(18, 3.4), sharex=False, sharey=True)
     #f, axs = plt.subplots(1, 3, figsize=(18, 3.4), sharex=True, sharey=True)
-    f, axs = plt.subplots(2, 3, figsize=(18, 12), sharex=True, sharey=True)
+    f, axs = plt.subplots(2, 3, figsize=(25, 16), sharex=True, sharey=True)
     #f, axs = plt.subplots(2, 2, figsize=(18, 6), sharex=False, sharey=True)
     axs = axs.flatten()
 
@@ -130,46 +129,75 @@ def main():
             )
             # make title bold if average
             if task == 'average':
-                ax.set_title(task.title(), fontweight='bold', fontsize=30)
+                ax.set_title(task.title(), fontweight='bold', fontsize=40)
             else:
-                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title(), fontsize=30)
+                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title(), fontsize=40)
             ax.set_xlabel(None)
             ax.set_ylabel(None)
             ax.set_xlim(0, MAX_STEPS)
+            ax.set_ylim(-2, 100)
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
-            ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
-            ax.set_ylim(0, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))
+            ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
 
-            ax.tick_params(axis='x', labelsize=25)
-            ax.tick_params(axis='y', labelsize=25)
+            ax.tick_params(axis='x', labelsize=35)
+            ax.tick_params(axis='y', labelsize=35)
     
     h, l = [], []
     for ax in axs:
         _h, _l = ax.get_legend_handles_labels()
         if len(_h) > len(h):
             h, l = _h, _l
-    
 
     # Update the font properties for "Ours"
-    legend_labels = []
+    legend_labels = l
     font_properties = []
-    for label in l:
-        if label == "Ours":
-            # Use a bold font for "Ours"
-            font_properties.append(fm.FontProperties(weight="bold", size=30))
-        else:
-            # Use the default font for other labels
-            font_properties.append(fm.FontProperties(size=30))
-        legend_labels.append(label)
 
     # Add the custom legend to the figure
-    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
-    for text, font in zip(legend.get_texts(), font_properties):
+    legend1 = f.legend(
+        h[:3], 
+        legend_labels[:3], 
+        loc="lower center", 
+        bbox_to_anchor=(0.5, 0.0),  # Center legend horizontally below the subplots
+        ncol=3,  # Span horizontally
+        frameon=False, 
+        handleheight=2.0,
+    )
+
+    # Adjust line alignment in legend
+
+    legend2 = f.legend(
+        h[3:], 
+        legend_labels[3:], 
+        loc="lower center", 
+        bbox_to_anchor=(0.5, -0.07),  # Center legend horizontally below the subplots
+        ncol=2,  # Span horizontally
+        frameon=False, 
+        handleheight=2.0,
+    )
+
+    for label in legend_labels:
+        if label == "Ours":
+            # Use a bold font for "Ours"
+            font_properties.append(fm.FontProperties(weight="bold", size=45))
+        else:
+            # Use the default font for other labels
+            font_properties.append(fm.FontProperties(size=45))
+
+    for handle in legend1.legend_handles:
+            handle.set_linewidth(10)
+
+    for handle in legend2.legend_handles:
+        handle.set_linewidth(10)
+    
+    for text, font in zip(legend1.get_texts(), font_properties[:3]):
+        text.set_font_properties(font)
+    
+    for text, font in zip(legend2.get_texts(), font_properties[3:]):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.15, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.14, wspace=0.15, hspace=0.25)
     save_fig('ablation_algorithms')
 
 

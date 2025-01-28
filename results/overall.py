@@ -140,20 +140,20 @@ def main():
                 linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
                 err_kws={'alpha': 0.1},
             )
-        ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title(), fontsize=30)
+        ax.set_title(domain.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('-', ' ').title(), fontsize=30, weight="bold")
         ax.set_xlabel(None)
         ax.set_ylabel(None)
         ax.set_xlim(0, max_steps)  # Use domain-specific max_steps
         ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
         ax.xaxis.set_major_locator(plt.MultipleLocator(max_steps / 2))
-        ax.set_ylim(0, 100)
+        ax.set_ylim(-2, 100)
         ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.yaxis.set_major_locator(plt.MultipleLocator(50))
 
         ax.tick_params(axis='x', labelsize=30)
         ax.tick_params(axis='y', labelsize=30)
     
-    #f.supxlabel("Interaction Steps", fontsize=30)
+    f.supxlabel("Interaction Steps", fontsize=30, y=0.15)
 
     h, l = [], []
     for ax in axs:
@@ -174,11 +174,15 @@ def main():
         legend_labels.append(label)
 
     # Add the custom legend to the figure
-    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
+    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False, handleheight=1.5)
+    
+    for handle in legend.legend_handles:
+        handle.set_linewidth(6)
+
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.24, wspace=0.15, hspace=0.375)
+    f.subplots_adjust(bottom=0.34, wspace=0.15, hspace=0.375)
     save_fig('overall')
 
 if __name__ == '__main__':

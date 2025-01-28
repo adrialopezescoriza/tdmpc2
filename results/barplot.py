@@ -113,7 +113,7 @@ def plot_barplot(domain_averages):
                 fontweight=fontweight
             )
 
-        ax.set_title(domain.replace('-', ' ').title(), fontsize=36)
+        ax.set_title(domain.replace('-', ' ').title(), fontsize=36, weight="bold")
         ax.set_xlabel(None)
         ax.set_xticks([])  # Remove x-axis labels
         ax.set_yticks([0, 50, 100])

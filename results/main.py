@@ -56,7 +56,7 @@ ALGORITHMS = [
     "Modem2 + DrS",
     "Modem",
     "TDMPC2",
-    #"LaNE",
+    "LaNE",
 ]
 
 SUITE_DICT = {
@@ -67,7 +67,7 @@ SUITE_DICT = {
     "combined": TASK_DEMOS_COMBINED,
 } 
 
-SUITE = "combined"
+SUITE = "humanoids"
 TASKS_DEMOS = SUITE_DICT[SUITE] # TASKS_DEMOS_MANISKILL, TASKS_DEMOS_METAWORLD
 # TASKS_DEMOS.update(TASKS_DEMOS_METAWORLD)
 MAX_STEPS = 500
@@ -111,12 +111,11 @@ def main():
     # prepend average to tasks
     tasks = ['average'] + tasks
 
-    #f, axs = plt.subplots(1, 3, figsize=(40, 10), sharex=False, sharey=True)
-    #f, axs = plt.subplots(1, 4, figsize=(40, 10), sharex=False, sharey=True)
-    #f, axs = plt.subplots(1, 3, figsize=(18, 3.4), sharex=True, sharey=True)
-    #f, axs = plt.subplots(2, 3, figsize=(28, 12), sharex=True, sharey=True)
-    #f, axs = plt.subplots(2, 2, figsize=(36, 12), sharex=False, sharey=True)
-    f, axs = plt.subplots(3, 3, figsize=(18, 16), sharex=True, sharey=True)
+    f, axs = plt.subplots(1, 3, figsize=(25, 5), sharex=False, sharey=True)
+    # f, axs = plt.subplots(1, 4, figsize=(30, 6), sharex=False, sharey=True)
+    # f, axs = plt.subplots(2, 3, figsize=(28, 12), sharex=True, sharey=True)
+    # f, axs = plt.subplots(2, 2, figsize=(25, 12), sharex=False, sharey=True)
+    # f, axs = plt.subplots(3, 3, figsize=(18, 16), sharex=True, sharey=True)
     axs = axs.flatten()
 
     # Plot results
@@ -150,10 +149,9 @@ def main():
             ax.set_xlim(0, MAX_STEPS)
             ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:.0f}' + ('K' if x > 0 else '')))
             ax.xaxis.set_major_locator(plt.MultipleLocator(MAX_STEPS / 2))
-            ax.set_ylim(0, 100)
+            ax.set_ylim(-2, 100)
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))
-
             ax.tick_params(axis='x', labelsize=25)
             ax.tick_params(axis='y', labelsize=25)
     
@@ -176,11 +174,24 @@ def main():
         legend_labels.append(label)
 
     # Add the custom legend to the figure
-    legend = f.legend(h, legend_labels, loc="lower center", ncol=len(exp_names), frameon=False)
+    legend = f.legend(
+        h, 
+        legend_labels, 
+        loc="lower center", 
+        bbox_to_anchor=(0.5, 0.0),  # Center legend horizontally below the subplots
+        ncol=len(ALGORITHMS),  # Span horizontally
+        frameon=False, 
+        handleheight=1.5,
+    )
+
+    # Adjust line alignment in legend
+    for handle in legend.legend_handles:
+        handle.set_linewidth(6)
+
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.15, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.30, wspace=0.15, hspace=0.25)
     save_fig(SUITE)
 
 

@@ -19,9 +19,9 @@ TASKS_DEMOS_MANISKILL = {
 
 ALGORITHMS = [
     "Modem2 + DrS",
-    "Modem",
     "Modem2",
     "TDMPC2 + DrS",
+    "Modem",
 ]
 
 TASKS_DEMOS = TASKS_DEMOS_MANISKILL
@@ -75,59 +75,49 @@ def main():
     # Convert n_demos to a categorical variable for equal spacing
     combined_results['n_demos'] = combined_results['n_demos'].astype(str)
 
-    # Create a custom palette and line width mapping
-    palette = {
-        ALGO_TO_LABEL[algo]: COLORS[ALGO_TO_COLOR[algo]] for algo in ALGORITHMS
-    }
-    line_widths = {
-        ALGO_TO_LABEL[algo]: 3 if ALGO_TO_LABEL[algo] == "Ours" else 2 for algo in ALGORITHMS
-    }
-
     # Plot using seaborn
-    plt.figure(figsize=(12, 8))
-    sns.lineplot(
-        data=combined_results,
-        x='n_demos',
-        y='step_to_30',
-        hue='algorithm',
-        palette=palette,
-        linewidth=2,
-        errorbar='ci',  # Seaborn computes 95% CI error bars automatically
-    )
+    plt.figure(figsize=(19, 14))
 
     # Make "Ours" line bold
-    for algo in combined_results['algorithm'].unique():
-        if algo == "Ours":
-            sns.lineplot(
-                data=combined_results[combined_results['algorithm'] == algo],
-                x='n_demos',
-                y='step_to_30',
-                color=palette[algo],
-                linewidth=4,  # Bold line for "Ours"
-                errorbar='ci',
-            )
+    for exp_name in exp_names:
+        sns.lineplot(
+            data=combined_results[combined_results['algorithm'] == ALGO_TO_LABEL.get(exp_name, exp_name)],
+            x='n_demos',
+            y='step_to_30',
+            legend=False,
+            label=ALGO_TO_LABEL.get(exp_name, exp_name),
+            color=COLORS[ALGO_TO_COLOR[exp_name]],
+            linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
+            errorbar=('ci', 95),
+            err_kws={'alpha': 0.1},
+        )
 
     # Formatting
-    plt.title('Steps to Reach 30% Success \u2193', fontsize=18)
-    plt.xlabel('Number of Demos', fontsize=20)
-    plt.ylabel('Steps to Reach 30%', fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    plt.xlabel('Number of Demos', fontsize=35)
+    plt.ylabel('Steps to Reach 30% Success \u2193', fontsize=35)
+    plt.xticks(fontsize=30)
+    plt.xlim(0,5)
+    plt.yticks(fontsize=30)
     plt.grid(True, linestyle='-', alpha=0.6)
 
     # Custom legend
     legend = plt.legend(
         title=None,
-        fontsize=20,
+        fontsize=40,
         loc='upper center',
-        bbox_to_anchor=(0.5, -0.1),  # Position legend below the plot
-        ncol=len(ALGORITHMS),
+        bbox_to_anchor=(0.55, -0.12),  # Position legend below the plot
+        ncol=len(ALGORITHMS) / 2,
         frameon=False,
+        handleheight=0.5,
     )
+    # Adjust line alignment in legend
+    for handle in legend.legend_handles:
+        handle.set_linewidth(10)
+
     # Bold "Ours" in legend
     for text in legend.get_texts():
         if text.get_text() == "Ours":
-            text.set_font_properties(fm.FontProperties(weight="bold", size=20))
+            text.set_font_properties(fm.FontProperties(weight="bold", size=40))
 
     # Save the figure
     plt.tight_layout()
