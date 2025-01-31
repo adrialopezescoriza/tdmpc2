@@ -124,14 +124,14 @@ def main():
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
-                linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
-                err_kws={'alpha': 0.1},
+                linewidth=5 if ALGO_TO_LABEL[exp_name] == 'Ours' else 4,
+                err_kws={'alpha': 0.2},
             )
             # make title bold if average
             if task == 'average':
-                ax.set_title(task.title(), fontweight='bold', fontsize=40)
+                ax.set_title(task.title(), fontweight='bold', fontsize=45)
             else:
-                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title(), fontsize=40)
+                ax.set_title(task.replace('goto', 'reach').replace('-corridor', '').replace('corridor', 'run').replace('mw-', '').replace('humanoid-','').replace('robosuite-','').replace('-', ' ').title(), fontsize=45)
             ax.set_xlabel(None)
             ax.set_ylabel(None)
             ax.set_xlim(0, MAX_STEPS)
@@ -143,6 +143,8 @@ def main():
 
             ax.tick_params(axis='x', labelsize=35)
             ax.tick_params(axis='y', labelsize=35)
+    
+    f.supxlabel("Interaction Steps", fontsize=40, y=0.09)
     
     h, l = [], []
     for ax in axs:
@@ -162,7 +164,7 @@ def main():
         bbox_to_anchor=(0.5, 0.0),  # Center legend horizontally below the subplots
         ncol=3,  # Span horizontally
         frameon=False, 
-        handleheight=2.0,
+        handleheight=3.0,
     )
 
     # Adjust line alignment in legend
@@ -174,16 +176,16 @@ def main():
         bbox_to_anchor=(0.5, -0.07),  # Center legend horizontally below the subplots
         ncol=2,  # Span horizontally
         frameon=False, 
-        handleheight=2.0,
+        handleheight=3.0,
     )
 
     for label in legend_labels:
         if label == "Ours":
             # Use a bold font for "Ours"
-            font_properties.append(fm.FontProperties(weight="bold", size=45))
+            font_properties.append(fm.FontProperties(weight="bold", size=50))
         else:
             # Use the default font for other labels
-            font_properties.append(fm.FontProperties(size=45))
+            font_properties.append(fm.FontProperties(size=50))
 
     for handle in legend1.legend_handles:
             handle.set_linewidth(10)
@@ -197,7 +199,7 @@ def main():
     for text, font in zip(legend2.get_texts(), font_properties[3:]):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.14, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.18, wspace=0.15, hspace=0.25)
     save_fig('ablation_algorithms')
 
 

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
 import matplotlib.font_manager as fm
+import matplotlib.ticker as ticker
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from results import *
@@ -45,11 +46,11 @@ TASK_TO_ALGO = {
     'stack-cube-semi': 'Ours',
     'stack-cube-1-stages-semi': 'Ours',
     'stack-cube-2-stages-semi': 'Ours',
-    'stack-cube': 'Ours (no Dens.)',
+    'stack-cube': 'no learned reward',
     'peg-insertion-semi': 'Ours',
     'peg-insertion-1-stages-semi': 'Ours',
     'peg-insertion-2-stages-semi': 'Ours',
-    'peg-insertion': 'Ours (no Dens.)',
+    'peg-insertion': 'no learned reward',
 }
 
 def main():
@@ -84,7 +85,7 @@ def main():
     # Combine all stages for a single seaborn lineplot call
     all_data = pd.concat(aggregated_results.values(), ignore_index=True)
 
-    plt.figure(figsize=(19, 14))
+    plt.figure(figsize=(19, 10))
 
     # Seaborn lineplot with automatic error bars
     sns.lineplot(
@@ -93,31 +94,32 @@ def main():
         hue='stage',
         data=all_data,
         palette={stage: COLORS[STAGES_TO_COLORS[stage]] for stage in STAGES_TO_COLORS.keys()},
-        linewidth=3,
+        linewidth=5,
         legend=True,
         errorbar='ci',
-        err_kws={'alpha':0.1},
+        err_kws={'alpha':0.15},
     )
 
     # Formatting
-    plt.xlabel('Interaction Steps', fontsize=32)
-    plt.ylabel('Success (%)', fontsize=32)
+    plt.xlabel('Interaction Steps', fontsize=35)
+    plt.ylabel(None)
     plt.xticks(
         ticks=[0, MAX_STEPS // 2, MAX_STEPS],  # Set ticks at 0, middle, and max
         labels=['0', f'{MAX_STEPS // 2}K', f'{MAX_STEPS}K'],
-        fontsize=25
+        fontsize=35
     )
-    plt.yticks(fontsize=25)
+    plt.yticks(fontsize=35)
     plt.xlim(0, MAX_STEPS)
     plt.ylim(-2, 105)
     plt.grid(True, linestyle='-', alpha=0.6)
+    plt.gca().yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, p: f'{y:.0f}%'))
 
     # Custom legend
     legend = plt.legend(
         title=None,
-        fontsize=37,
+        fontsize=40,
         loc='upper center',
-        bbox_to_anchor=(0.5, -0.1),  # Position legend below the plot
+        bbox_to_anchor=(0.5, -0.13),  # Position legend below the plot
         ncol=len(STAGES_TO_COLORS),
         frameon=False,
         handleheight=0.5,
@@ -129,7 +131,7 @@ def main():
     # Bold "Ours" in legend
     for text in legend.get_texts():
         if text.get_text() == "3 stages":
-            text.set_font_properties(fm.FontProperties(weight="bold", size=37))
+            text.set_font_properties(fm.FontProperties(weight="bold", size=40))
 
     # Save the figure
     plt.tight_layout()

@@ -136,8 +136,8 @@ def main():
                 legend=False,
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
-                linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
-                err_kws={'alpha': 0.1},
+                linewidth=5 if ALGO_TO_LABEL[exp_name] == 'Ours' else 4,
+                err_kws={'alpha': 0.2},
             )
             # make title bold if average
             if task == 'average':
@@ -154,6 +154,8 @@ def main():
             ax.yaxis.set_major_locator(plt.MultipleLocator(50))
             ax.tick_params(axis='x', labelsize=25)
             ax.tick_params(axis='y', labelsize=25)
+    
+    f.supxlabel("Interaction Steps", fontsize=25, y=0.18)
     
     h, l = [], []
     for ax in axs:
@@ -191,7 +193,7 @@ def main():
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.30, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.17 if SUITE == "robosuite" else (0.37 if SUITE == "humanoids" else 0.15), wspace=0.15, hspace=0.25)
     save_fig(SUITE)
 
 

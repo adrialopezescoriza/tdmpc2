@@ -112,7 +112,7 @@ def main():
                 label=ALGO_TO_LABEL.get(exp_name, exp_name),
                 color=COLORS[ALGO_TO_COLOR[exp_name]],
                 linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
-                err_kws={'alpha': 0.1},
+                err_kws={'alpha': 0.2},
             )
 
         ax.set_title(f'{n_demos} demos', fontsize=30)
@@ -129,6 +129,9 @@ def main():
         ax.tick_params(axis='y', labelsize=25)
 
     h, l = [], []
+
+    f.supxlabel("Interaction Steps", fontsize=25, y=0.07)
+
     for ax in axs:
         _h, _l = ax.get_legend_handles_labels()
         if len(_h) > len(h):
@@ -154,7 +157,7 @@ def main():
         bbox_to_anchor=(0.5, 0.0),  # Center legend horizontally below the subplots
         ncol=len(ALGORITHMS),  # Span horizontally
         frameon=False, 
-        handleheight=1.5,
+        handleheight=2.5,
     )
 
     # Adjust line alignment in legend
@@ -164,7 +167,7 @@ def main():
     for text, font in zip(legend.get_texts(), font_properties):
         text.set_font_properties(font)
 
-    f.subplots_adjust(bottom=0.16, wspace=0.15, hspace=0.25)
+    f.subplots_adjust(bottom=0.14, wspace=0.15, hspace=0.25)
     save_fig('ablation_demos')
 
 

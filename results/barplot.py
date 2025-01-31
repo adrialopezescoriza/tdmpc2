@@ -12,21 +12,21 @@ from results import *
 
 # Task and algorithm setup from overall.py
 TASKS_DEMOS = {
-    "Maniskill-Manipulation": {
+    "ManiSkill Manipulation": {
         'stack-cube': [25],
         'peg-insertion': [100],
         'lift-peg-upright': [5],
         'poke-cube': [5],
         'pick-place': [100],
     },
-    "Metaworld": {
+    "Meta-World": {
         'mw-assembly': [5],
         'mw-peg-insert-side': [5],
         'mw-pick-place': [5],
         'mw-stick-push': [5],
         'mw-stick-pull': [5],
     },
-    "Maniskill-Humanoids": {
+    "ManiSkill Humanoids": {
         'humanoid-place-apple': [5],
         'humanoid-transport-box': [50],
     },
@@ -113,12 +113,13 @@ def plot_barplot(domain_averages):
                 fontweight=fontweight
             )
 
-        ax.set_title(domain.replace('-', ' ').title(), fontsize=36, weight="bold")
+        ax.set_title(domain, fontsize=36, weight="bold")
         ax.set_xlabel(None)
         ax.set_xticks([])  # Remove x-axis labels
         ax.set_yticks([0, 50, 100])
-        ax.set_ylabel('Success Rate (%)' if i == 0 else None, fontsize=36)
+        ax.set_ylabel(None)
         ax.tick_params(axis='y', labelsize=30)
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, p: f'{y:.0f}%'))
         ax.set_ylim(0, 110)
 
     # Create the legend
@@ -136,7 +137,7 @@ def plot_barplot(domain_averages):
         handletextpad=2.5,  # Increase spacing between legend line and text
         columnspacing=6.0,  # Increase spacing between legend columns
         handlelength=6.0,
-        handleheight=1.5,
+        handleheight=6,
     )
 
     # Adjust line alignment in legend

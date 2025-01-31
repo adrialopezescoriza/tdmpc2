@@ -87,14 +87,14 @@ def main():
             legend=False,
             label=ALGO_TO_LABEL.get(exp_name, exp_name),
             color=COLORS[ALGO_TO_COLOR[exp_name]],
-            linewidth=4 if ALGO_TO_LABEL[exp_name] == 'Ours' else 3,
+            linewidth=8 if ALGO_TO_LABEL[exp_name] == 'Ours' else 6,
             errorbar=('ci', 95),
-            err_kws={'alpha': 0.1},
+            err_kws={'alpha': 0.2},
         )
 
     # Formatting
     plt.xlabel('Number of Demos', fontsize=35)
-    plt.ylabel('Steps to Reach 30% Success \u2193', fontsize=35)
+    plt.ylabel('Steps to reach 30% success \u2193', fontsize=35)
     plt.xticks(fontsize=30)
     plt.xlim(0,5)
     plt.yticks(fontsize=30)

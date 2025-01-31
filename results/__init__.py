@@ -48,9 +48,9 @@ COLORS = [
 
 ALGO_TO_LABEL = {
     'Modem2 + DrS': 'Ours',
-    'Modem2': 'no Dense Rew.',
-    'TDMPC2': 'TDMPC2',
-    'TDMPC2 + DrS': 'TDMPC2 + Dense Rew.',
+    'Modem2': 'no learned reward',
+    'TDMPC2': 'TD-MPC2',
+    'TDMPC2 + DrS': 'TD-MPC2 + learned reward',
     'Modem': 'MoDem',
     'LaNE': 'LaNE',
 }
