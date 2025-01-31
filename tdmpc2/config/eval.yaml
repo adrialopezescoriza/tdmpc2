@@ -6,12 +6,12 @@ defaults:
 task: peg-insertion-semi
 obs: state
 obs_save: rgbd
-num_envs: 32
+num_envs: 1
 sim_backend: gpu
 
 # evaluation
-checkpoint: /home/adria/tdmpc2/ckpt/ManiSkill3/tdmpc/PegInsertionSide.pt
-eval_episodes: 200
+checkpoint: /home/adria/tdmpc2/ckpt/Maniskill3/tdmpc/PegInsertionSide.pt
+eval_episodes: 25
 
 # saving
 save_trajectory: true
@@ -20,5 +20,5 @@ log_path: .
 save_video: true
 
 # misc
-render_obs: False
-multitask: false
+render_obs: true
+compile: false
