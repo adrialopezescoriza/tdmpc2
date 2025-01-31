@@ -42,7 +42,7 @@ save_csv: false
 # drS
 drS_enable: true
 n_stages: ???
-demo_path: /hdd/adria/demo_data/ManiSkill3/state/TDMPC/PegInsertionSide_200.pkl
+demo_path: /hdd/adria/demo_data/Maniskill3/state/tdmpc/PegInsertionSide_200.pkl
 drS_discriminator:
     disc_lr: 3e-4
     batch_size: 256

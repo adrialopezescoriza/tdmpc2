@@ -1,28 +1,27 @@
 import torch
 from copy import deepcopy
 
-from common.buffer import Buffer
-from common.logger import timeit
+from storage.buffer import Buffer
 from termcolor import colored
 	
-class DrSBuffer(Buffer):
+class EnsembleBuffer(Buffer):
 	"""
 	Ensemble of an offline dataloader and an online replay buffer.
 	"""
 
 	def __init__(self, cfg):
 		_cfg1, _cfg2 = deepcopy(cfg), deepcopy(cfg)
-		_cfg1.batch_size = int(cfg.batch_size)
-		_cfg2.batch_size = int(cfg.batch_size)
+		_cfg1.batch_size = int(cfg.batch_size * (1 - _cfg1.oversample_ratio))
+		_cfg2.batch_size = int(cfg.batch_size - _cfg1.batch_size)
 		super().__init__(_cfg1)
 
 		# Load dataset into second replay buffer (ugly) TODO: This should be a normal dataloader
-		from .data_utils import load_dataset_as_td
+		from storage.data_utils import load_dataset_as_td
 		demo_dataset = load_dataset_as_td(_cfg2.demo_path, num_traj=_cfg2.n_demos, success_only=_cfg2.demo_success_only)
 		cfg.n_demos = len(demo_dataset)
 		_cfg2.buffer_size = (len(demo_dataset) + int(len(demo_dataset)==1)) * len(demo_dataset[0]) # Offline buffer is not dynamically alocated
 
-		cfg.batch_size = _cfg1.batch_size
+		cfg.batch_size = _cfg1.batch_size + _cfg2.batch_size
 		# NOTE: Make sure demonstrations contain same type of rewards as online environment!
 		self._offline_buffer = Buffer(_cfg2)
 		if len(demo_dataset)==1:
@@ -32,7 +31,18 @@ class DrSBuffer(Buffer):
 		print(colored(f"Filled demo buffer with {self._offline_buffer.num_eps} trajectories", "green"))
 
 	def sample(self, return_td=False):
-		return super().sample()
+		"""Sample a batch of subsequences from the two buffers."""
+		if return_td:
+			raise NotImplementedError(f"TensorDict return not implemented for EnsembleBuffer")
+		if self._offline_buffer.batch_size <= 0:
+			return super().sample()
+
+		obs0, action0, reward0, task0 = self._offline_buffer.sample()
+		obs1, action1, reward1, task1 = super().sample()
+		return torch.cat([obs0, obs1], dim=1), \
+			torch.cat([action0, action1], dim=1), \
+			torch.cat([reward0, reward1], dim=1), \
+			torch.cat([task0, task1], dim=0) if task0 and task1 else None
 	
 	# TODO: Need to revisit this to ensure some kind of diversity
 	def sample_for_disc(self, batch_size : int):
@@ -59,4 +69,3 @@ class DrSBuffer(Buffer):
 			obs_return.append({"success_data": tds["obs"][success_indices], "fail_data": tds["obs"][fail_indices]})
 		
 		return obs_return
-

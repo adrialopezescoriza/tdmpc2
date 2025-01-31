@@ -6,8 +6,6 @@ from common.scale import RunningScale
 from common.world_model import WorldModel
 from tensordict import TensorDict
 
-from common.logger import timeit
-
 class TDMPC2(torch.nn.Module):
 	"""
 	TD-MPC2 agent. Implements training + inference.

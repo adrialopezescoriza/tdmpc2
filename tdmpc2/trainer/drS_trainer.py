@@ -1,24 +1,37 @@
 from time import time
 
+from common.logger import timeit
+
 import numpy as np
 import torch
-from math import ceil
 from termcolor import colored
 from tensordict.tensordict import TensorDict
+from functools import partial
 from copy import deepcopy
 
+from common.discriminator import Discriminator
+from storage.drS_buffer import DrSBuffer
 from trainer.base import Trainer
 
-class ModemTrainer(Trainer):
+
+class DrsTrainer(Trainer):
 	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
+		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
+
 		self._step = 0
 		self._pretrain_step = 0
 		self._ep_idx = 0
 		self._start_time = time()
+		self._alpha = 1
+
+		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,), compile=self.cfg.compile)
+
+		print('Discriminator Architecture:', self.disc)
+		print("Learnable parameters: {:,}".format(self.agent.model.total_params + self.disc.total_params))
 
 	def common_metrics(self):
 		"""Return a dictionary of current metrics."""
@@ -56,13 +69,18 @@ class ModemTrainer(Trainer):
 				self.logger.video.save("pretrain/iteration", self._pretrain_step, key='videos/pretrain_video')
 			else:
 				self.logger.video.save("eval/step", self._step)
-		
-		return dict(
+
+		eval_metrics = dict(
 			episode_reward=torch.cat(ep_rewards).mean(),
 			episode_max_reward=torch.cat(ep_max_rewards).max(),
 			episode_success=torch.stack(ep_successes).mean(),
 			best_seed=ep_seeds[torch.argmax(torch.stack(ep_rewards).mean(dim=1)).item()] if pretrain else None,
 		)
+		
+		stage_success = {f"stage_{s}_success": ((torch.cat(ep_max_rewards) >= s).float().mean()) for s in range(1, self.env.n_stages + 1)}
+		eval_metrics.update(stage_success)
+
+		return eval_metrics
 
 	def to_td(self, obs, action=None, reward=None, device='cpu'):
 		"""Creates a TensorDict for a new episode."""
@@ -109,6 +127,10 @@ class ModemTrainer(Trainer):
 				metrics.update({"iteration": self._pretrain_step, "total_time": time() -  start_time})
 				self.logger.log(metrics, category="pretrain")
 		
+		eval_metrics = self.eval(pretrain=True)
+		eval_metrics.update({"iteration": self._pretrain_step})
+		self.logger.log(eval_metrics, category="pretrain")
+
 		if best_score == 0:
 			best_model = deepcopy(self.agent.bc_model.state_dict())
 			best_seed = eval_metrics["best_seed"]
@@ -119,7 +141,7 @@ class ModemTrainer(Trainer):
 		self.seed_scheduler.start(init_seed=best_seed, max_seeds=1e4)
 
 	def train(self):
-		"""Train agent"""
+		"""Train agent and discriminator"""
 
 		# Policy pretraining
 		if self.cfg.get("policy_pretraining", False):
@@ -134,9 +156,10 @@ class ModemTrainer(Trainer):
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
-			# Save Agent periodically
+			# Save DrS and Agent periodically
 			if self._step % self.cfg.save_freq == 0 and self._step > 0:
-					print("Saving agent checkpoint...")
+					print("Saving agent and discriminator checkpoints...")
+					self.logger.save_agent(self.disc, identifier=f'drS_{self._step}')
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
 
 			# Reset environment
@@ -150,6 +173,7 @@ class ModemTrainer(Trainer):
 
 				if self._step > 0:
 					tds = torch.cat(self._tds)
+					tds['stage'] = (torch.ones_like(tds['reward']) * np.nanmax(tds['reward'], axis=0)).int()
 					self._ep_idx = self.buffer.add(tds)
 					train_metrics.update(
 						episode_reward=np.nansum(tds['reward'], axis=0).mean(),
@@ -163,9 +187,9 @@ class ModemTrainer(Trainer):
 				obs = self.env.reset(seed=self.seed_scheduler.sample())
 				self._tds = [self.to_td(obs, device='cpu')]
 
+			self._alpha = max(0, self.cfg.max_bc_steps - self._step) / self.cfg.max_bc_steps	
 			# Collect experience
 			if self._step > self.cfg.seed_steps:
-				self._alpha = max(0, self.cfg.max_bc_steps - self._step) / self.cfg.max_bc_steps
 				if np.random.random() < self._alpha and self.cfg.get("policy_pretraining", False):
 					action = self.agent.policy_action(obs, eval_mode=True)
 				else:
@@ -177,7 +201,7 @@ class ModemTrainer(Trainer):
 			obs, reward, done, info = self.env.step(action)
 			self._tds.append(self.to_td(obs, action, reward, device='cpu'))
 			
-			# Update agent
+			# Update discriminator and agent
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
 					num_updates = max(1, int(self.cfg.seed_steps / self.cfg.steps_per_update))
@@ -186,7 +210,10 @@ class ModemTrainer(Trainer):
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))
 				for _ in range(num_updates):
-					agent_train_metrics = self.agent.update(self.buffer, action_penalty=self.cfg.action_penalty)
+					disc_train_metrics = self.disc.update(self.buffer,
+										   encoder_function=partial(self.agent.model.encode, task=None))
+					agent_train_metrics = self.agent.update(self.buffer, modify_reward=self.disc.get_reward, action_penalty=self.cfg.action_penalty)
+				train_metrics.update(disc_train_metrics)
 				train_metrics.update(agent_train_metrics)
 
 			self._step += self.cfg.num_envs

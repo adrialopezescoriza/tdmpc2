@@ -6,9 +6,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tensordict.tensordict import TensorDict
 
-from common.logger import timeit
-
-
 class Discriminator(nn.Module):
     def __init__(self, envs, cfg, state_shape=None, compile=False):
         super().__init__()
@@ -109,7 +106,6 @@ class Discriminator(nn.Module):
             k = 3
             reward = k * stage_idx + torch.gather(stage_rewards, -1, stage_idx.long()) # Selects stage index for each reward
             reward = reward / (k * self.n_stages) # reward is in (0, 1]
-            #reward = reward - 2 # make the reward negative
             reward = reward + 1 # make the reward positive
 
             return reward
