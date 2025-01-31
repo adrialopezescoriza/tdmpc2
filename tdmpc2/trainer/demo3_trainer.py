@@ -10,17 +10,16 @@ from functools import partial
 from copy import deepcopy
 
 from common.discriminator import Discriminator
-from storage.drS_buffer import DrSBuffer
 from trainer.base import Trainer
 
 
-class DrsTrainer(Trainer):
-	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
+class Demo3Trainer(Trainer):
+	"""Trainer class for DEMO3 training. Assumes semi-sparse reward environment."""
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
-		assert self.env.reward_mode in ["semi_sparse","drS"], "Reward mode is incompatible with DrS"
+		assert self.env.reward_mode in ["semi_sparse"], "Reward mode is incompatible with DEMO3"
 
 		self._step = 0
 		self._pretrain_step = 0
@@ -28,7 +27,7 @@ class DrsTrainer(Trainer):
 		self._start_time = time()
 		self._alpha = 1
 
-		self.disc = Discriminator(self.env, self.cfg.drS_discriminator, state_shape=(self.cfg.latent_dim,), compile=self.cfg.compile)
+		self.disc = Discriminator(self.env, self.cfg.discriminator, state_shape=(self.cfg.latent_dim,), compile=self.cfg.compile)
 
 		print('Discriminator Architecture:', self.disc)
 		print("Learnable parameters: {:,}".format(self.agent.model.total_params + self.disc.total_params))
@@ -156,10 +155,10 @@ class DrsTrainer(Trainer):
 			if self._step % self.cfg.eval_freq == 0:
 				eval_next = True
 
-			# Save DrS and Agent periodically
+			# Save Disc and Agent periodically
 			if self._step % self.cfg.save_freq == 0 and self._step > 0:
 					print("Saving agent and discriminator checkpoints...")
-					self.logger.save_agent(self.disc, identifier=f'drS_{self._step}')
+					self.logger.save_agent(self.disc, identifier=f'disc_{self._step}')
 					self.logger.save_agent(self.agent, identifier=f'agent_{self._step}')
 
 			# Reset environment

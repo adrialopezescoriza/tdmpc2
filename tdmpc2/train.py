@@ -17,16 +17,16 @@ from envs import make_env
 from tdmpc2 import TDMPC2
 from common.logger import Logger
 from trainer.online_trainer import OnlineTrainer
-from trainer.drS_trainer import DrsTrainer
+from trainer.demo3_trainer import Demo3Trainer
 from trainer.modem_trainer import ModemTrainer
 from storage.ensemble_buffer import EnsembleBuffer
-from storage.drS_buffer import DrSBuffer
+from storage.demo3_buffer import Demo3Buffer
 
 torch.backends.cudnn.benchmark = True
 
 torch.set_float32_matmul_precision('high')
 
-@hydra.main(config_name='drS', config_path='./config/')
+@hydra.main(config_name='demo3', config_path='./config/')
 def train(cfg: dict):
 	"""
 	Script for training single-task / multi-task TD-MPC2 agents.
@@ -59,12 +59,12 @@ def train(cfg: dict):
 
 	# Initiallize elements
 	env_ = make_env(cfg)
-	if cfg.drS_enable:
-		# DrS
-		cfg.algorithm = "Modem2 + DrS" if cfg.use_demos else "TDMPC2 + DrS"
-		trainer_cls = DrsTrainer
+	if cfg.enable_reward_learning:
+		# DEMO3
+		cfg.algorithm = "DEMO3" if cfg.use_demos else "TDMPC2 + Reward Learning"
+		trainer_cls = Demo3Trainer
 		cfg.n_stages = env_.n_stages
-		buffer_cls = EnsembleBuffer if cfg.use_demos else DrSBuffer
+		buffer_cls = EnsembleBuffer if cfg.use_demos else Demo3Buffer
 	elif cfg.use_demos:
 		# MoDem
 		cfg.algorithm = "Modem2"

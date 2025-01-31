@@ -70,15 +70,12 @@ dropout: 0.01
 simnorm_dim: 8
 
 # logging
-wandb_project: tdmpc2-drS
+wandb_project: tdmpc2
 wandb_entity: alopez
 wandb_silent: true
 disable_wandb: true
 save_csv: false
 save_freq: 1_000_000
-
-# drS
-drS_ckpt: ???
 
 # misc
 save_video: true

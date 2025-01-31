@@ -2,21 +2,21 @@ import gymnasium as gym
 import numpy as np
 import numpy.typing as npt
 
-SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse", "drS")
+SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse")
 
 def getRewardWrapper(task: str):
     if task.startswith("assembly"):
-        return Assembly_DrS
+        return Assembly_DEMO3
     if task.startswith("pick-place"):
-        return PickAndPlace_DrS
+        return PickAndPlace_DEMO3
     if task.startswith("peg-insert-side"):
-        return PegInsertSide_DrS
+        return PegInsertSide_DEMO3
     if task.startswith("pick-place-wall"):
-        return PickAndPlaceWall_DrS
+        return PickAndPlaceWall_DEMO3
     if task.startswith("stick-push"):
-        return StickPush_DrS
+        return StickPush_DEMO3
     if task.startswith("stick-pull"):
-        return StickPull_DrS
+        return StickPull_DEMO3
     raise NotImplementedError(f"Task {task} is not supported yet.")
 
 class MetaWorldRewardWrapper(gym.Wrapper):
@@ -36,7 +36,7 @@ class MetaWorldRewardWrapper(gym.Wrapper):
             rew  = float(info["success"])
         elif self.reward_mode == "dense":
             rew = rew
-        elif self.reward_mode == "semi_sparse" or self.reward_mode == "drS":
+        elif self.reward_mode == "semi_sparse":
             rew = self.compute_semi_sparse_reward(info)
         else:
             raise NotImplementedError(self.reward_mode)
@@ -58,7 +58,7 @@ class MetaWorldRewardWrapper(gym.Wrapper):
 ############################################
 # Assembly (Hard)
 ############################################
-class Assembly_DrS(MetaWorldRewardWrapper):
+class Assembly_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2
@@ -72,7 +72,7 @@ class Assembly_DrS(MetaWorldRewardWrapper):
 ############################################
 # Pick And Place (Hard)
 ############################################
-class PickAndPlace_DrS(MetaWorldRewardWrapper):
+class PickAndPlace_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2
@@ -86,7 +86,7 @@ class PickAndPlace_DrS(MetaWorldRewardWrapper):
 ############################################
 # Peg Insert Side (Medium)
 ############################################
-class PegInsertSide_DrS(MetaWorldRewardWrapper):
+class PegInsertSide_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2
@@ -100,7 +100,7 @@ class PegInsertSide_DrS(MetaWorldRewardWrapper):
 ############################################
 # Stick Pull (Very Hard)
 ############################################
-class StickPull_DrS(MetaWorldRewardWrapper):
+class StickPull_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2
@@ -114,7 +114,7 @@ class StickPull_DrS(MetaWorldRewardWrapper):
 ############################################
 # Stick Push (Very Hard)
 ############################################
-class StickPush_DrS(MetaWorldRewardWrapper):
+class StickPush_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2
@@ -128,7 +128,7 @@ class StickPush_DrS(MetaWorldRewardWrapper):
 ############################################
 # Pick And Place (Hard)
 ############################################
-class PickAndPlaceWall_DrS(MetaWorldRewardWrapper):
+class PickAndPlaceWall_DEMO3(MetaWorldRewardWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.n_stages = 2

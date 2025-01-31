@@ -2,7 +2,6 @@ import gymnasium as gym
 import numpy as np
 import torch
 from envs.utils import convert_observation_to_space
-from envs.wrappers.drS_reward import DrsRewardWrapper
 from mani_skill.utils.common import flatten_state_dict
 
 import mani_skill.envs
@@ -27,118 +26,96 @@ MANISKILL_TASKS = {
 		control_mode='pd_ee_delta_pose',
 	),
 	'pick-place': dict(
-		env='PickAndPlace_DrS_learn',
+		env='PickAndPlace_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'stack-cube': dict (
-		env='StackCube_DrS_learn',
+		env='StackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense', 
 	),
 	'peg-insertion': dict(
-		env='PegInsertionSide_DrS_learn',
+		env='PegInsertionSide_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'two-robot-pick-cube': dict(
-		env='TwoRobotPickCube_DrS_learn',
+		env='TwoRobotPickCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'two-robot-stack-cube': dict(
-		env='TwoRobotStackCube_DrS_learn',
+		env='TwoRobotStackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'lift-peg-upright': dict(
-		env='LiftPegUpright_DrS_learn',
+		env='LiftPegUpright_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'poke-cube': dict(
-		env='PokeCube_DrS_learn',
+		env='PokeCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
 	'humanoid-place-apple': dict(
-		env='HumanoidPlaceApple_DrS_learn',
+		env='HumanoidPlaceApple_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='dense',
 	),
 	'humanoid-transport-box': dict(
-		env='HumanoidTransportBox_DrS_learn',
+		env='HumanoidTransportBox_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='dense',
 	),
 	## Semi-sparse reward tasks with stage-indicators
 	'pick-place-semi': dict (
-		env='PickAndPlace_DrS_learn',
+		env='PickAndPlace_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'stack-cube-semi': dict (
-		env='StackCube_DrS_learn',
+		env='StackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'peg-insertion-semi': dict (
-		env='PegInsertionSide_DrS_learn',
+		env='PegInsertionSide_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'lift-peg-upright-semi': dict(
-		env='LiftPegUpright_DrS_learn',
+		env='LiftPegUpright_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
 	'poke-cube-semi': dict(
-		env='PokeCube_DrS_learn',
+		env='PokeCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
 	'two-robot-pick-cube-semi': dict(
-		env='TwoRobotPickCube_DrS_learn',
+		env='TwoRobotPickCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
 	'two-robot-stack-cube-semi': dict(
-		env='TwoRobotStackCube_DrS_learn',
+		env='TwoRobotStackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
 	'humanoid-place-apple-semi': dict(
-		env='HumanoidPlaceApple_DrS_learn',
+		env='HumanoidPlaceApple_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='semi_sparse',
 	),
 	'humanoid-transport-box-semi': dict(
-		env='HumanoidTransportBox_DrS_learn',
+		env='HumanoidTransportBox_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='semi_sparse',
 	),
-	## 1 and 2 stages
-	'stack-cube-1-stages-semi': dict (
-		env='StackCube_DrS_learn_1_stages',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='semi_sparse', 
-	),
-	'peg-insertion-1-stages-semi': dict (
-		env='PegInsertionSide_DrS_learn_1_stages',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='semi_sparse', 
-	),
-	'stack-cube-2-stages-semi': dict (
-		env='StackCube_DrS_learn_2_stages',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='semi_sparse', 
-	),
-	'peg-insertion-2-stages-semi': dict (
-		env='PegInsertionSide_DrS_learn_2_stages',
-		control_mode='pd_ee_delta_pose',
-		reward_mode='semi_sparse', 
-	),
-
 }
 
 def select_obs(keys, obs):
@@ -266,8 +243,5 @@ def make_env(cfg):
 	if isinstance(cfg.max_bc_steps, str):
 		cfg.max_bc_steps = cfg.maniskill.max_bc_steps 
 
-	# DrS Reward Wrapper
-	if task_cfg.get("reward_mode", None) == "drS":
-		env = DrsRewardWrapper(env, cfg.drS_ckpt)
 	env = ManiSkillWrapper(env, cfg.maniskill)
 	return env

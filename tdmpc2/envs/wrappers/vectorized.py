@@ -29,7 +29,7 @@ class Vectorized(gym.Wrapper):
 		self.action_space = env.action_space
 		self.max_episode_steps = env.max_episode_steps
 
-		# DrS specific
+		# DEMO3 specific
 		if hasattr(env, "n_stages"):
 			self.reward_mode = env.reward_mode
 			self.n_stages = env.n_stages

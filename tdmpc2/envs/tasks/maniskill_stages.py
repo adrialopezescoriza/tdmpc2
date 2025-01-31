@@ -50,8 +50,8 @@ class PandaWristCamPegCustom(PandaWristCam):
             )
         ]
 
-class DrS_BaseEnv(BaseEnv):
-    SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse", "drS")
+class DEMO3_BaseEnv(BaseEnv):
+    SUPPORTED_REWARD_MODES = ("dense", "sparse", "semi_sparse")
 
     SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
     agent: Union[PandaWristCam, PandaWristCamPegCustom]
@@ -65,7 +65,7 @@ class DrS_BaseEnv(BaseEnv):
             return float(eval_info["success"])
         elif self._reward_mode == "dense":
             return self.compute_dense_reward(**kwargs)
-        elif self._reward_mode == "semi_sparse" or self._reward_mode == "drS":
+        elif self._reward_mode == "semi_sparse":
             # reward build from stage indicators
             return self.compute_semi_sparse_reward(**kwargs)
         else:
@@ -92,8 +92,8 @@ class DrS_BaseEnv(BaseEnv):
 
 from mani_skill.envs.tasks.tabletop.pick_cube import PickCubeEnv
 
-@register_env("PickAndPlace_DrS_learn", max_episode_steps=100)
-class PickAndPlace_DrS_learn(DrS_BaseEnv, PickCubeEnv):
+@register_env("PickAndPlace_DEMO3", max_episode_steps=100)
+class PickAndPlace_DEMO3(DEMO3_BaseEnv, PickCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
@@ -111,8 +111,8 @@ class PickAndPlace_DrS_learn(DrS_BaseEnv, PickCubeEnv):
 
 from mani_skill.envs.tasks.tabletop.stack_cube import StackCubeEnv
 
-@register_env("StackCube_DrS_learn", max_episode_steps=100)
-class StackCube_DrS_learn(DrS_BaseEnv, StackCubeEnv):
+@register_env("StackCube_DEMO3", max_episode_steps=100)
+class StackCube_DEMO3(DEMO3_BaseEnv, StackCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
@@ -124,36 +124,14 @@ class StackCube_DrS_learn(DrS_BaseEnv, StackCubeEnv):
             'is_cube_A_placed': (torch.logical_or(eval_info["is_cubeA_on_cubeB"], eval_info["success"])).float(),
         }
 
-@register_env("StackCube_DrS_learn_2_stages", max_episode_steps=100)
-class StackCube_DrS_learn_2_stages(DrS_BaseEnv, StackCubeEnv):
-    def __init__(self, *args, **kwargs):
-        self.n_stages = 2
-        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
-
-    def compute_stage_indicator(self):
-        eval_info = self.evaluate()
-        return {
-            'is_grasped': (torch.logical_or(eval_info["is_cubeA_grasped"], eval_info["success"])).float(), # allow releasing the cube when stacked
-        }
-    
-@register_env("StackCube_DrS_learn_1_stages", max_episode_steps=100)
-class StackCube_DrS_learn_1_stages(DrS_BaseEnv, StackCubeEnv):
-    def __init__(self, *args, **kwargs):
-        self.n_stages = 1
-        super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
-
-    def compute_stage_indicator(self):
-        eval_info = self.evaluate()
-        return {}
-
 ############################################
 # Peg Insertion
 ############################################
 
 from mani_skill.envs.tasks.tabletop.peg_insertion_side import PegInsertionSideEnv
 
-@register_env("PegInsertionSide_DrS_learn", max_episode_steps=100)
-class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
+@register_env("PegInsertionSide_DEMO3", max_episode_steps=100)
+class PegInsertionSide_DEMO3(DEMO3_BaseEnv, PegInsertionSideEnv):
     SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
     agent: Union[PandaWristCam, PandaWristCamPegCustom]
 
@@ -194,86 +172,6 @@ class PegInsertionSide_DrS_learn(DrS_BaseEnv, PegInsertionSideEnv):
             CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
         ]
 
-@register_env("PegInsertionSide_DrS_learn_2_stages", max_episode_steps=100)
-class PegInsertionSide_DrS_learn_2_satges(DrS_BaseEnv, PegInsertionSideEnv):
-    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
-    agent: Union[PandaWristCam, PandaWristCamPegCustom]
-
-    def __init__(self, *args, **kwargs):
-        self.n_stages = 2
-        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
-
-    def is_peg_pre_inserted(self):
-        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
-        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
-            peg_head_wrt_goal.p[:, 1:], axis=1
-        )
-        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
-        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
-
-        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
-        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
-            peg_wrt_goal_yz_dist < 0.01
-        )
-        return pre_inserted
-
-    def compute_stage_indicator(self):
-        success = self.evaluate()["success"]
-        stage_1 = torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)
-        stage_2 = torch.logical_or(self.is_peg_pre_inserted(), success)
-        return {
-            'is_correctly_grasped': torch.logical_or(stage_1, stage_2).float(), # do this to allow releasing the peg when inserted
-        }
-
-    @property
-    def _default_sensor_configs(self):
-        # Define all the cameras needed for the environment
-        pose_ext = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4]) # NOTE: Same as render camera
-        pose_base = sapien_utils.look_at([0, -0.4, 0.2], [0, 0, 0.1])
-        return [
-            CameraConfig("base_camera", pose=pose_base, width=128, height=128, fov=np.pi / 2, near=0.01, far=100),
-            CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
-        ]
-
-@register_env("PegInsertionSide_DrS_learn_1_stages", max_episode_steps=100)
-class PegInsertionSide_DrS_learn_1_satge(DrS_BaseEnv, PegInsertionSideEnv):
-    SUPPORTED_ROBOTS = ["panda_wristcam", "panda_wristcam_custom"]
-    agent: Union[PandaWristCam, PandaWristCamPegCustom]
-
-    def __init__(self, *args, **kwargs):
-        self.n_stages = 1
-        super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
-
-    def is_peg_pre_inserted(self):
-        peg_head_wrt_goal = self.goal_pose.inv() * self.peg_head_pose
-        peg_head_wrt_goal_yz_dist = torch.linalg.norm(
-            peg_head_wrt_goal.p[:, 1:], axis=1
-        )
-        peg_wrt_goal = self.goal_pose.inv() * self.peg.pose
-        peg_wrt_goal_yz_dist = torch.linalg.norm(peg_wrt_goal.p[:, 1:], axis=1)
-
-        # stage 3 passes if peg is correctly oriented in order to insert into hole easily
-        pre_inserted = (peg_head_wrt_goal_yz_dist < 0.01) & (
-            peg_wrt_goal_yz_dist < 0.01
-        )
-        return pre_inserted
-
-    def compute_stage_indicator(self):
-        success = self.evaluate()["success"]
-        stage_1 = torch.logical_or(self.agent.is_grasping(self.peg, max_angle=20), success)
-        stage_2 = torch.logical_or(self.is_peg_pre_inserted(), success)
-        return {}
-
-    @property
-    def _default_sensor_configs(self):
-        # Define all the cameras needed for the environment
-        pose_ext = sapien_utils.look_at([0.5, -0.5, 0.8], [0.05, -0.1, 0.4]) # NOTE: Same as render camera
-        pose_base = sapien_utils.look_at([0, -0.4, 0.2], [0, 0, 0.1])
-        return [
-            CameraConfig("base_camera", pose=pose_base, width=128, height=128, fov=np.pi / 2, near=0.01, far=100),
-            CameraConfig("ext_camera", pose=pose_ext, width=128, height=128, fov=1, near=0.01, far=100),
-        ]
-
 ############################################
 # Lift Peg Upright
 ############################################
@@ -281,8 +179,8 @@ class PegInsertionSide_DrS_learn_1_satge(DrS_BaseEnv, PegInsertionSideEnv):
 from mani_skill.envs.tasks.tabletop.lift_peg_upright import LiftPegUprightEnv
 from mani_skill.utils.geometry import rotation_conversions
 
-@register_env("LiftPegUpright_DrS_learn", max_episode_steps=100)
-class LiftPegUpright_DrS_learn(DrS_BaseEnv, LiftPegUprightEnv):
+@register_env("LiftPegUpright_DEMO3", max_episode_steps=100)
+class LiftPegUpright_DEMO3(DEMO3_BaseEnv, LiftPegUprightEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam", **kwargs)
@@ -344,8 +242,8 @@ class LiftPegUpright_DrS_learn(DrS_BaseEnv, LiftPegUprightEnv):
 from mani_skill.envs.tasks.tabletop.two_robot_pick_cube import TwoRobotPickCube
 from mani_skill.utils.geometry import rotation_conversions
 
-@register_env("TwoRobotPickCube_DrS_learn", max_episode_steps=100)
-class TwoRobotPickCube_DrS_learn(DrS_BaseEnv, TwoRobotPickCube):
+@register_env("TwoRobotPickCube_DEMO3", max_episode_steps=100)
+class TwoRobotPickCube_DEMO3(DEMO3_BaseEnv, TwoRobotPickCube):
     def __init__(self, *args, **kwargs):
         self.n_stages = 4
         super().__init__(*args, **kwargs)
@@ -387,8 +285,8 @@ class TwoRobotPickCube_DrS_learn(DrS_BaseEnv, TwoRobotPickCube):
 
 from mani_skill.envs.tasks.tabletop.two_robot_stack_cube import TwoRobotStackCube
 
-@register_env("TwoRobotStackCube_DrS_learn", max_episode_steps=100)
-class TwoRobotStackCube_DrS_learn(DrS_BaseEnv, TwoRobotStackCube):
+@register_env("TwoRobotStackCube_DEMO3", max_episode_steps=100)
+class TwoRobotStackCube_DEMO3(DEMO3_BaseEnv, TwoRobotStackCube):
     def __init__(self, *args, **kwargs):
         self.n_stages = 4
         super().__init__(*args, **kwargs)
@@ -408,8 +306,8 @@ class TwoRobotStackCube_DrS_learn(DrS_BaseEnv, TwoRobotStackCube):
 from mani_skill.envs.tasks.tabletop.poke_cube import PokeCubeEnv
 from mani_skill.utils.geometry import rotation_conversions
 
-@register_env("PokeCube_DrS_learn", max_episode_steps=100)
-class PokeCube_DrS_learn(DrS_BaseEnv, PokeCubeEnv):
+@register_env("PokeCube_DEMO3", max_episode_steps=100)
+class PokeCube_DEMO3(DEMO3_BaseEnv, PokeCubeEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, robot_uids="panda_wristcam_custom", **kwargs)
@@ -453,8 +351,8 @@ class PokeCube_DrS_learn(DrS_BaseEnv, PokeCubeEnv):
 
 from mani_skill.envs.tasks.humanoid import UnitreeG1PlaceAppleInBowlEnv
 
-@register_env("HumanoidPlaceApple_DrS_learn", max_episode_steps=100)
-class HumanoidPlaceApple_DrS_learn(DrS_BaseEnv, UnitreeG1PlaceAppleInBowlEnv):
+@register_env("HumanoidPlaceApple_DEMO3", max_episode_steps=100)
+class HumanoidPlaceApple_DEMO3(DEMO3_BaseEnv, UnitreeG1PlaceAppleInBowlEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, **kwargs)
@@ -505,8 +403,8 @@ class HumanoidPlaceApple_DrS_learn(DrS_BaseEnv, UnitreeG1PlaceAppleInBowlEnv):
 
 from mani_skill.envs.tasks.humanoid import TransportBoxEnv
 
-@register_env("HumanoidTransportBox_DrS_learn", max_episode_steps=100)
-class TransportBox_DrS_learn(DrS_BaseEnv, TransportBoxEnv):
+@register_env("HumanoidTransportBox_DEMO3", max_episode_steps=100)
+class TransportBox_DEMO3(DEMO3_BaseEnv, TransportBoxEnv):
     def __init__(self, *args, **kwargs):
         self.n_stages = 3
         super().__init__(*args, **kwargs)

@@ -1,17 +1,17 @@
 ############################################
-# Dockerfile for Modem-DrS                 #
+# Dockerfile for DEMO3                 #
 # Adria Lopez Escoriza, 2024 (c)           #
 # https://www.tdmpc2.com                   #
 # ---------------------------------------- #
 # Build instructions:                      #
-# docker build . -t <user>/modem-drs:0.0.0 #
-# docker push <user>/modem-drs:0.0.0       #
+# docker build . -t <user>/DEMO3:0.0.0 #
+# docker push <user>/DEMO3:0.0.0       #
 # ---------------------------------------- #
 # Run:                                     #
 # docker run -i \                          #
-#   -v <path>/<to>/modem-drs:/modem-drs \  #
+#   -v <path>/<to>/DEMO3:/DEMO3 \  #
 #   --gpus all \                           #
-#   -t <user>/modem-drs:0.0.0 \            #
+#   -t <user>/DEMO3:0.0.0 \            #
 #   /bin/bash                              #
 ############################################
 
@@ -60,4 +60,4 @@ RUN conda update conda && \
 ENV MUJOCO_GL=egl
 
 # success!
-RUN echo "Successfully built Modem-DrS Docker image!"
+RUN echo "Successfully built DEMO3 Docker image!"

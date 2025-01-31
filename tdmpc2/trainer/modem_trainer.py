@@ -9,7 +9,7 @@ from copy import deepcopy
 from trainer.base import Trainer
 
 class ModemTrainer(Trainer):
-	"""Trainer class for DrS training. Assumes semi-sparse reward environment."""
+	"""Trainer class for Modem training. Assumes semi-sparse reward environment."""
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)

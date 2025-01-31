@@ -5,7 +5,7 @@ from storage.buffer import Buffer
 from common.logger import timeit
 from termcolor import colored
 	
-class DrSBuffer(Buffer):
+class Demo3Buffer(Buffer):
 	"""
 	Ensemble of an offline dataloader and an online replay buffer.
 	"""
