@@ -18,7 +18,7 @@ Official implementation of
 
 <!-- <img src="assets/8.png" width="100%" style="max-width: 640px"><br/> -->
 
-This repository contains code for training and evaluating **DEMO<sup>3</sup>**, MoDem and TD-MPC2 agents. We additionally open-source **16+** multi-stage tasks across 4 task domains: [Meta-World](https://meta-world.github.io/), [ManiSkill3](https://maniskill.readthedocs.io/en/latest/#), [RoboSuite](https://robosuite.ai/) and [BiGym](https://github.com/chernyadev/bigym). Our codebase supports both state and pixel observations. We hope that this repository will serve as a useful community resource for future research on demonstration-augmented RL.
+This repository contains code for training and evaluating **DEMO<sup>3</sup>**, MoDem and TD-MPC2 agents. We additionally open-source **20+** multi-stage tasks across 4 task domains: [Meta-World](https://meta-world.github.io/), [ManiSkill3](https://maniskill.readthedocs.io/en/latest/#), [RoboSuite](https://robosuite.ai/) and [BiGym](https://github.com/chernyadev/bigym). Our codebase supports both state and pixel observations. We hope that this repository will serve as a useful community resource for future research on demonstration-augmented RL.
 
 ----
 
@@ -40,62 +40,51 @@ If you prefer to install dependencies manually, start by installing dependencies
 conda env create -f docker/environment.yaml
 ```
 
-The `environment.yaml` file installs dependencies required for training on DMControl tasks. Other domains can be installed by following the instructions in `environment.yaml`.
-
-See `docker/Dockerfile` for installation instructions if you do not already have MuJoCo 2.1.0 installed. MyoSuite requires `gym==0.13.0` which is incompatible with Meta-World and ManiSkill2. Install separately with `pip install myosuite` if desired. Depending on your existing system packages, you may need to install other dependencies. See `docker/Dockerfile` for a list of recommended system packages.
+The `environment.yaml` file installs dependencies required for training on ManiSkill and Meta-World tasks. Since Meta-Wolrd uses a is incompatible with the MuJoCo versions of BiGym and Robosuite we install a separate conda environment for this comains. The `bigym.yaml` file installs dependencies required for training on BiGym and Robosuite tasks.
 
 ----
 
 ## Supported tasks
 
-This codebase currently supports **104** continuous control tasks from **DMControl**, **Meta-World**, **ManiSkill2**, and **MyoSuite**. Specifically, it supports 39 tasks from DMControl (including 11 custom tasks), 50 tasks from Meta-World, 5 tasks from ManiSkill2, and 10 tasks from MyoSuite, and covers all tasks used in the paper. See below table for expected name formatting for each task domain:
+This codebase currently supports **20+** continuous manipulation tasks from **ManiSkill3**, **Meta-World**, **Robosuite**, and **BiGym**. Specifically, we modify these manipulation tasks. See below table for expected name formatting for each task domain:
 
-| domain | task
-| --- | --- |
-| dmcontrol | dog-run
-| dmcontrol | cheetah-run-backwards
-| metaworld | mw-assembly
-| metaworld | mw-pick-place-wall
-| maniskill | pick-cube
-| maniskill | pick-ycb
-| myosuite  | myo-key-turn
-| myosuite  | myo-key-turn-hard
+| domain | task | reward type
+| --- | --- | --- |
+| metaworld | mw-assembly-dense         | dense
+| metaworld | mw-pick-place-wall-semi   | semi-sparse
+| maniskill | ms-stack-cube-dense       | dense
+| maniskill | ms-pick-place-semi        | semi-sparse
+| robosuite | robosuite-lift-dense      | dense
+| robosuite | robosuite-stack-semi      | semi-sparse
+|   bigym   | bigym-move-plate-semi     | semi-sparse
 
-which can be run by specifying the `task` argument for `evaluation.py`. Multi-task training and evaluation is specified by setting `task=mt80` or `task=mt30` for the 80-task and 30-task sets, respectively.
 
-**As of Dec 27, 2023 the TD-MPC2 codebase also supports pixel observations for DMControl tasks**; use argument `obs=rgb` if you wish to train visual policies.
+which can be run by specifying the `task` argument for `evaluation.py` or `train.py`. In order to change the observation type, use argument `obs=rgb` or `obs=state` in `demo3.yaml` or `eval.yaml`.
 
 
 ## Example usage
 
-We provide examples on how to evaluate our provided TD-MPC**2** checkpoints, as well as how to train your own TD-MPC**2** agents, below.
+We provide examples on how to evaluate our provided DEMO<sup>3</sup> checkpoints, as well as how to train your own DEMO<sup>3</sup> agents, below.
 
 ### Evaluation
 
-See below examples on how to evaluate downloaded single-task and multi-task checkpoints.
+See below examples on how to evaluate downloaded or pre-trained checkpoints. See `eval.yaml` for a complete list of arguments.
 
 ```
-$ python evaluate.py task=mt80 model_size=48 checkpoint=/path/to/mt80-48M.pt
-$ python evaluate.py task=mt30 model_size=317 checkpoint=/path/to/mt30-317M.pt
-$ python evaluate.py task=dog-run checkpoint=/path/to/dog-1.pt save_video=true
+$ python evaluate.py task=ms-stack-cube-semi checkpoint=/path/to/stack-cube.pt save_video=true save_trajectories=true
+$ python evaluate.py task=mw-assembly-dense checkpoint=/path/to/assembly.pt save_video=true save_trajectories=true
 ```
-
-All single-task checkpoints expect `model_size=5`. Multi-task checkpoints are available in multiple model sizes. Available arguments are `model_size={1, 5, 19, 48, 317}`. Note that single-task evaluation of multi-task checkpoints is currently not supported. See `config.yaml` for a full list of arguments.
 
 ### Training
 
-See below examples on how to train TD-MPC**2** on a single task (online RL) and on multi-task datasets (offline RL). We recommend configuring [Weights and Biases](https://wandb.ai) (`wandb`) in `config.yaml` to track training progress.
+See below examples on how to train DEMO<sup>3</sup> on a multi-stage tasks. We recommend configuring [Weights and Biases](https://wandb.ai) (`wandb`) in `demo3.yaml` to track training progress.
 
 ```
-$ python train.py task=mt80 model_size=48 batch_size=1024
-$ python train.py task=mt30 model_size=317 batch_size=1024
-$ python train.py task=dog-run steps=7000000
-$ python train.py task=walker-walk obs=rgb
+$ python train.py task=ms-stack-cube-semi steps=1000000 demo_path=/path/to/ms-demos/stack-cube-200.pkl enable_reward_learning=true
+$ python train.py task=mw-assembly-semi steps=500000 obs=rgb demo_path=/path/to/mw-demos/assembly-200.pkl enable_reward_learning=true
 ```
 
-We recommend using default hyperparameters for single-task online RL, including the default model size of 5M parameters (`model_size=5`). Multi-task offline RL benefits from a larger model size, but larger models are also increasingly costly to train and evaluate. Available arguments are `model_size={1, 5, 19, 48, 317}`. See `config.yaml` for a full list of arguments.
-
-**As of Jan 7, 2024 the TD-MPC2 codebase also supports multi-GPU training for multi-task offline RL experiments**; use branch `distributed` and argument `world_size=N` to train on `N` GPUs. We cannot guarantee that distributed training will yield the same results, but they appear to be similar based on our limited testing.
+We recommend using default hyperparameters for single-task online RL from the official TDMPC**2** implementation, although they can be modified in `tdmpc2.yaml`.
 
 ----
 

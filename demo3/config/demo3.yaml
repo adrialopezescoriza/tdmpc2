@@ -5,7 +5,7 @@ defaults:
 # environment
 seed: 1
 task: ms-peg-insertion-semi
-obs: state
+obs: rgb
 num_envs: 16
 
 # evaluation
@@ -18,8 +18,8 @@ batch_size: 256
 steps_per_update: 4 # utd = steps_per_update / num_envs (in this implementation)
 buffer_size: 300_000
 save_freq: 500_000
-oversample_ratio: 0.0 # Demonstration sampling ratio
-policy_pretraining: false
+oversample_ratio: 0.5 # Demonstration sampling ratio
+policy_pretraining: true
 use_demos: ???
 seed_scheduler: false
 demo_success_only: false
@@ -40,7 +40,7 @@ save_csv: false
 # reward learning
 enable_reward_learning: true
 n_stages: ???
-demo_path: /hdd/adria/demo_data/Maniskill3/state/tdmpc/PegInsertionSide_200.pkl
+demo_path: /hdd/adria/demo_data/Maniskill3/rgb/tdmpc/PegInsertionSide_200.pkl
 discriminator:
     disc_lr: 3e-4
     batch_size: 256

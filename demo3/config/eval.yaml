@@ -3,7 +3,7 @@ defaults:
     - _self_
 
 # environment
-task: peg-insertion-semi
+task: ms-peg-insertion-semi
 obs: state
 obs_save: rgbd
 num_envs: 1

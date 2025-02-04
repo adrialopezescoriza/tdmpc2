@@ -224,7 +224,7 @@ def make_env(cfg):
 	# WARNING: If one env is already in GPU, the other ones must also be in GPU
 	env = gym.make(
 		task_cfg['env'],
-		obs_mode=cfg.obs,
+		obs_mode="rgbd" if cfg.obs in ("rgbd", "rgb") else cfg.obs,
 		control_mode=task_cfg['control_mode'],
 		num_envs=cfg.num_envs,
 		reward_mode=task_cfg.get("reward_mode", None),
