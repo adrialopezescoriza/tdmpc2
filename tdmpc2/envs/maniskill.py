@@ -9,109 +9,109 @@ import envs.tasks.maniskill_stages
 
 
 MANISKILL_TASKS = {
-	'lift-cube': dict(
+	'ms-lift-cube': dict(
 		env='LiftCube-v1',
 		control_mode='pd_ee_delta_pose',
 	),
-	'pick-cube': dict(
+	'ms-pick-cube': dict(
 		env='PickCube-v1',
 		control_mode='pd_ee_delta_pose',
 	),
-	'pick-ycb': dict(
+	'ms-pick-ycb': dict(
 		env='PickSingleYCB-v1',
 		control_mode='pd_ee_delta_pose',
 	),
-	'turn-faucet': dict(
+	'ms-turn-faucet': dict(
 		env='TurnFaucet-v1',
 		control_mode='pd_ee_delta_pose',
 	),
-	'pick-place': dict(
+	'ms-pick-place': dict(
 		env='PickAndPlace_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'stack-cube': dict (
+	'ms-stack-cube': dict (
 		env='StackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense', 
 	),
-	'peg-insertion': dict(
+	'ms-peg-insertion': dict(
 		env='PegInsertionSide_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'two-robot-pick-cube': dict(
+	'ms-two-robot-pick-cube': dict(
 		env='TwoRobotPickCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'two-robot-stack-cube': dict(
+	'ms-two-robot-stack-cube': dict(
 		env='TwoRobotStackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'lift-peg-upright': dict(
+	'ms-lift-peg-upright': dict(
 		env='LiftPegUpright_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'poke-cube': dict(
+	'ms-poke-cube': dict(
 		env='PokeCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='dense',
 	),
-	'humanoid-place-apple': dict(
+	'ms-humanoid-place-apple': dict(
 		env='HumanoidPlaceApple_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='dense',
 	),
-	'humanoid-transport-box': dict(
+	'ms-humanoid-transport-box': dict(
 		env='HumanoidTransportBox_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='dense',
 	),
 	## Semi-sparse reward tasks with stage-indicators
-	'pick-place-semi': dict (
+	'ms-pick-place-semi': dict (
 		env='PickAndPlace_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'stack-cube-semi': dict (
+	'ms-stack-cube-semi': dict (
 		env='StackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'peg-insertion-semi': dict (
+	'ms-peg-insertion-semi': dict (
 		env='PegInsertionSide_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'lift-peg-upright-semi': dict(
+	'ms-lift-peg-upright-semi': dict(
 		env='LiftPegUpright_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
-	'poke-cube-semi': dict(
+	'ms-poke-cube-semi': dict(
 		env='PokeCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse', 
 	),
-	'two-robot-pick-cube-semi': dict(
+	'ms-two-robot-pick-cube-semi': dict(
 		env='TwoRobotPickCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
-	'two-robot-stack-cube-semi': dict(
+	'ms-two-robot-stack-cube-semi': dict(
 		env='TwoRobotStackCube_DEMO3',
 		control_mode='pd_ee_delta_pose',
 		reward_mode='semi_sparse',
 	),
-	'humanoid-place-apple-semi': dict(
+	'ms-humanoid-place-apple-semi': dict(
 		env='HumanoidPlaceApple_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='semi_sparse',
 	),
-	'humanoid-transport-box-semi': dict(
+	'ms-humanoid-transport-box-semi': dict(
 		env='HumanoidTransportBox_DEMO3',
 		control_mode='pd_joint_delta_pos',
 		reward_mode='semi_sparse',

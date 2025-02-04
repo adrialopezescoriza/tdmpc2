@@ -61,13 +61,13 @@ def train(cfg: dict):
 	env_ = make_env(cfg)
 	if cfg.enable_reward_learning:
 		# DEMO3
-		cfg.algorithm = "DEMO3" if cfg.use_demos else "TDMPC2 + Reward Learning"
+		cfg.algorithm = "DEMO3" if cfg.use_demos else "TD-MPC2 + Reward Learning"
 		trainer_cls = Demo3Trainer
 		cfg.n_stages = env_.n_stages
 		buffer_cls = EnsembleBuffer if cfg.use_demos else Demo3Buffer
 	elif cfg.use_demos:
 		# MoDem
-		cfg.algorithm = "Modem2"
+		cfg.algorithm = "Modem-v2"
 		trainer_cls = ModemTrainer
 		buffer_cls = EnsembleBuffer
 	else:

@@ -82,9 +82,6 @@ class Discriminator(nn.Module):
             disc_loss.backward()
             self.optimizer.step()
 
-            pred = logits.detach() > 0
-
-            self.set_trained(stage_idx)
             disc_losses += [float(disc_loss.mean().item())]
 
         return TensorDict({"discriminator_loss": np.mean(disc_losses)} if len(disc_losses) != 0 else {})
@@ -105,7 +102,7 @@ class Discriminator(nn.Module):
 
             k = 3
             reward = k * stage_idx + torch.gather(stage_rewards, -1, stage_idx.long()) # Selects stage index for each reward
-            reward = reward / (k * self.n_stages) # reward is in (0, 1]
+            reward = reward / (k * self.n_stages) # Normalize reward (approx.)
             reward = reward + 1 # make the reward positive
 
             return reward

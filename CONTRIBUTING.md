@@ -1,4 +1,4 @@
-# Contributing to TD-MPC2
+# Contributing to DEMO3
 We want to make contributing to this repository as easy and transparent as
 possible.
 
@@ -16,5 +16,5 @@ We use GitHub issues to track public bugs. Please ensure your description is
 clear and has sufficient instructions to be able to reproduce the issue.
 
 ## License
-By contributing to TD-MPC2, you agree that your contributions will be licensed
+By contributing to DEMO3, you agree that your contributions will be licensed
 under the `LICENSE` file in the root directory of this source tree.

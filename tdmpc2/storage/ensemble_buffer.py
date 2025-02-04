@@ -15,7 +15,6 @@ class EnsembleBuffer(Buffer):
 		_cfg2.batch_size = int(cfg.batch_size - _cfg1.batch_size)
 		super().__init__(_cfg1)
 
-		# Load dataset into second replay buffer (ugly) TODO: This should be a normal dataloader
 		from storage.data_utils import load_dataset_as_td
 		demo_dataset = load_dataset_as_td(_cfg2.demo_path, num_traj=_cfg2.n_demos, success_only=_cfg2.demo_success_only)
 		cfg.n_demos = len(demo_dataset)
@@ -44,7 +43,6 @@ class EnsembleBuffer(Buffer):
 			torch.cat([reward0, reward1], dim=1), \
 			torch.cat([task0, task1], dim=0) if task0 and task1 else None
 	
-	# TODO: Need to revisit this to ensure some kind of diversity
 	def sample_for_disc(self, batch_size : int):
 		if self._offline_buffer.batch_size > 0:
 			td0 = self._offline_buffer.sample_single(return_td=True)

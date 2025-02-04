@@ -5,7 +5,6 @@ import random
 
 from tensordict.tensordict import TensorDict
 
-# TODO: Make more general for all kinds of datasets
 def load_dataset_as_td(path, num_traj=None, success_only=False):
     """
     Dataset must be stored as list of np.arrays

@@ -1,19 +1,18 @@
-############################################
-# Dockerfile for DEMO3                 #
-# Adria Lopez Escoriza, 2024 (c)           #
-# https://www.tdmpc2.com                   #
-# ---------------------------------------- #
-# Build instructions:                      #
-# docker build . -t <user>/DEMO3:0.0.0 #
-# docker push <user>/DEMO3:0.0.0       #
-# ---------------------------------------- #
-# Run:                                     #
-# docker run -i \                          #
-#   -v <path>/<to>/DEMO3:/DEMO3 \  #
-#   --gpus all \                           #
-#   -t <user>/DEMO3:0.0.0 \            #
-#   /bin/bash                              #
-############################################
+#################################################
+# Dockerfile for DEMO3  2024 (c)                #
+# https://sites.google.com/view/icml2025demo3   #
+# --------------------------------------------- #
+# Build instructions:                           #
+# docker build . -t <user>/DEMO3:0.0.0          #
+# docker push <user>/DEMO3:0.0.0                #
+# --------------------------------------------- #
+# Run:                                          #
+# docker run -i \                               #
+#   -v <path>/<to>/DEMO3:/DEMO3 \               #
+#   --gpus all \                                #
+#   -t <user>/DEMO3:0.0.0 \                     #
+#   /bin/bash                                   #
+#################################################
 
 # base image
 FROM nvidia/cudagl:11.3.0-devel-ubuntu20.04

@@ -16,7 +16,6 @@ class Demo3Buffer(Buffer):
 		_cfg2.batch_size = int(cfg.batch_size)
 		super().__init__(_cfg1)
 
-		# Load dataset into second replay buffer (ugly) TODO: This should be a normal dataloader
 		from .data_utils import load_dataset_as_td
 		demo_dataset = load_dataset_as_td(_cfg2.demo_path, num_traj=_cfg2.n_demos, success_only=_cfg2.demo_success_only)
 		cfg.n_demos = len(demo_dataset)

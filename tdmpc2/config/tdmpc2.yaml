@@ -71,7 +71,7 @@ simnorm_dim: 8
 
 # logging
 wandb_project: tdmpc2
-wandb_entity: alopez
+wandb_entity: ???
 wandb_silent: true
 disable_wandb: true
 save_csv: false

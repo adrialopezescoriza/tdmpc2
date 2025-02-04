@@ -47,19 +47,17 @@ COLORS = [
 ]
 
 ALGO_TO_LABEL = {
-    'Modem2 + DrS': 'Ours',
-    'Modem2': 'no learned reward',
-    'TDMPC2': 'TD-MPC2',
-    'TDMPC2 + DrS': 'TD-MPC2 + learned reward',
-    'Modem': 'MoDem',
+    'Demo3': 'Ours',
+    'MoDem2': 'no learned reward',
+    'TD-MPC2': 'TD-MPC2',
+    'MoDem': 'MoDem',
     'LaNE': 'LaNE',
 }
 ALGO_TO_COLOR = {
-    'TDMPC2 + DrS': 1,
-    'Modem2 + DrS': 0,
-    'Modem2': 3,
-    'TDMPC2': 4,
-    'Modem': 5,
+    'Ours': 1,
+    'no learned reward': 0,
+    'TD-MPC2': 4,
+    'MoDem': 5,
     'LaNE': 6,
 }
 

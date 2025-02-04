@@ -204,7 +204,7 @@ class Demo3Trainer(Trainer):
 			if self._step >= self.cfg.seed_steps:
 				if self._step == self.cfg.seed_steps:
 					num_updates = max(1, int(self.cfg.seed_steps / self.cfg.steps_per_update))
-					print(colored("\nTraining TDMPC Agent", "green", attrs=["bold"]))
+					print(colored("\nTraining DEMO3 Agent", "green", attrs=["bold"]))
 					print(f'Pretraining agent with {num_updates} update steps on seed data...')
 				else:
 					num_updates = max(1, int(self.cfg.num_envs / self.cfg.steps_per_update))

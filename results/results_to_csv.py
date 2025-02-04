@@ -16,8 +16,8 @@ ROBOSUITE_TASKS = ["robosuite-door-semi", "robosuite-stack-semi", "robosuite-pic
 MANISKILL_STAGES_TASKS = ["stack-cube", "stack-cube-2-stages-semi", "stack-cube-1-stages-semi", "peg-insertion", "peg-insertion-2-stages-semi", "peg-insertion-1-stages-semi"]
 OBS = 'rgbd'
 NUM_ENVS = 1
-ENTITY = 'alopez'
-ALGORITHMS = ["Modem2 + DrS", "Modem2", "TDMPC2", "TDMPC2 + DrS", "Modem", "LaNE"]
+ENTITY = 'wandb_username' # wandb_username
+ALGORITHMS = ["DEMO3", "MoDem"]
 PROJECT = 'maniskill3' 
 TASKS_DICT = {
     "maniskill3": MANISKILL_TASKS,
