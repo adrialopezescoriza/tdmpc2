@@ -16,7 +16,7 @@ from common.parser import parse_cfg
 from common.seed import set_seed
 from common.trajectory_saver import BaseTrajectorySaver
 from envs import make_env
-from tdmpc2 import TDMPC2
+from demo3 import TDMPC2
 
 import cv2
 # TODO: This is needed for mujoco not to crash. Unknown reason??
