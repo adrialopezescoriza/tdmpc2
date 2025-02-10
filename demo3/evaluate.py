@@ -16,7 +16,7 @@ from common.parser import parse_cfg
 from common.seed import set_seed
 from common.trajectory_saver import BaseTrajectorySaver
 from envs import make_env
-from demo3 import TDMPC2
+from tdmpc2 import TDMPC2
 
 import cv2
 # TODO: This is needed for mujoco not to crash. Unknown reason??
@@ -24,7 +24,7 @@ import torchrl
 
 torch.backends.cudnn.benchmark = True
 
-def add_text(frame, reward):
+def add_reward_text(frame, reward):
     font = cv2.FONT_HERSHEY_SIMPLEX
     text = f"R: {reward:.2f}"  # Format reward to 2 decimal places
     position = (10, 30)  # Top-left corner (x, y)
@@ -61,7 +61,7 @@ class ObservationConverter(object):
 			return self.env_obs.get_obs()
 		return env.get_obs(self.obs_type)
 	
-	def get_frame(self, env, obs, render_obs=True):
+	def get_frame(self, env, obs, render_obs=True, add_text=False):
 		if hasattr(obs, "keys") and render_obs:
 			frame = None
 			for k, v in obs.items():
@@ -103,7 +103,6 @@ def evaluate(cfg: dict):
 	cfg = parse_cfg(cfg)
 	set_seed(cfg.seed)
 	print(colored(f'Task: {cfg.task}', 'blue', attrs=['bold']))
-	print(colored(f'Model size: {cfg.get("model_size", "default")}', 'blue', attrs=['bold']))
 	print(colored(f'Checkpoint: {cfg.checkpoint}', 'blue', attrs=['bold']))
 	if not cfg.multitask and ('mt80' in cfg.checkpoint or 'mt30' in cfg.checkpoint):
 		print(colored('Warning: single-task evaluation of multi-task models is not currently supported.', 'red', attrs=['bold']))
@@ -153,7 +152,8 @@ def evaluate(cfg: dict):
 							torch.tensor(False).repeat(cfg.num_envs).cpu(),
 							[{} for _ in range(cfg.num_envs)])
 				if cfg.save_video:
-					frames = [add_text(obs_converter.get_frame(env, obs_save, cfg.render_obs), 0)]
+					frame = obs_converter.get_frame(env, obs_save, cfg.render_obs)
+					frames = [add_reward_text(frame, reward[0]) if cfg.add_text else frame]
 				
 				while not done.all():
 					action = agent.act(obs, t0=t==0, task=task_idx, eval_mode=True).to(obs.device)
@@ -162,7 +162,8 @@ def evaluate(cfg: dict):
 					ep_reward += reward
 					t += 1
 					if cfg.save_video:
-						frames.append(add_text(obs_converter.get_frame(env, obs_save, cfg.render_obs), reward[0]))
+						frame = obs_converter.get_frame(env, obs_save, cfg.render_obs)
+						frames.append(add_reward_text(frame, reward[0]) if cfg.add_text else frame)
 					if cfg.save_trajectory:
 						terminated = done # Only terminate when truncated
 						info = {k: v.cpu() for k,v in info.items()}
@@ -176,7 +177,7 @@ def evaluate(cfg: dict):
 				ep_successes.append(info['success'].tolist())
 				if cfg.save_video:
 					imageio.mimsave(
-						os.path.join(video_dir, f'{task}-{saver.num_traj}.mp4'), frames, fps=15)
+						os.path.join(video_dir, f'{task}-{len(ep_rewards)}.mp4'), frames, fps=15)
 				pbar.update((saver.num_traj if cfg.save_trajectory else len(ep_rewards)) - pbar.n)
 		pbar.close()
 		env.close()
