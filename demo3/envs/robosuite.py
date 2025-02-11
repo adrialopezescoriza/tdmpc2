@@ -17,10 +17,13 @@ class RobosuiteWrapper(gym.Wrapper):
 		self.observation_space = convert_observation_to_space(self.select_obs(self.get_observation()))
 
 	def select_obs(self, obs):
-		processed = {}
-		for k, v in obs.items():
-			processed["rgb_" + k] = v
-		return processed
+		if self.env.from_pixels:
+			processed = {}
+			for k, v in obs.items():
+				processed["rgb_" + k] = v
+			return processed
+		else:
+			return obs
 	
 	def rand_act(self):
 		return self.action_space.sample().astype(np.float32)
@@ -57,6 +60,7 @@ def _make_env(cfg):
 		raise ValueError('Unknown task:', cfg.task)
 	env = RobosuiteTask(
 			env_name=env_id,
+			from_pixels=cfg.obs in ("rgb", "rgbd"),
 			reward_type=reward_mode,
 			cameras=(0, 1),
 		    height=cfg.robosuite.camera.image_size,

@@ -90,20 +90,20 @@ class RobosuiteTask(gym.Env):
 
         self.action_space = gym.spaces.Box(low=-1, high=1, shape=(7,), dtype=float)
 
-        shape = (
-            [3 * len(cameras), height, width]
-            if channels_first
-            else [height, width, 3 * len(cameras)]
-        )
         if self.from_pixels:
+            shape = (
+                [3 * len(cameras), height, width]
+                if channels_first
+                else [height, width, 3 * len(cameras)]
+            )
             self._observation_space = gym.spaces.Box(
                 low=0, high=255, shape=shape, dtype=np.uint8
             )
         else:
-            if isinstance(self._env.observation_space, gym.spaces.Dict):
-                self._observation_space = self._env.observation_space["state"]
-            else:
-                self._observation_space = self._env.observation_space
+            shape = (self._unpack_obs(self._env._get_observations()).shape[-1],)
+            self._observation_space = gym.spaces.Box(
+                low=-np.inf, high=np.inf, shape=shape, dtype=np.uint8
+            )
 
     def get_observation(self):
         obs = self._env._get_observations()
@@ -118,7 +118,9 @@ class RobosuiteTask(gym.Env):
                     images[self.camera_names[c]] = images[self.camera_names[c]].transpose((2, 0, 1))
             return images
         else:
-            return obs["state"]
+            robot_state = obs["robot0_proprio-state"]
+            object_state = obs["object-state"]
+            return np.concatenate((robot_state, object_state), axis=-1)
 
     def step(self, action):
         obs, reward, done, info = self._env.step(action)
