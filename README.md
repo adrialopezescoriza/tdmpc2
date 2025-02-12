@@ -68,7 +68,7 @@ We provide examples on how to evaluate our provided DEMO<sup>3</sup> checkpoints
 
 ### Evaluation
 
-See below examples on how to evaluate downloaded or pre-trained checkpoints. See `eval.yaml` for a complete list of arguments.
+See below examples on how to evaluate pre-trained checkpoints. See `eval.yaml` for a complete list of arguments.
 
 ```
 $ python evaluate.py task=ms-stack-cube-semi checkpoint=/path/to/stack-cube.pt save_video=true save_trajectories=true
