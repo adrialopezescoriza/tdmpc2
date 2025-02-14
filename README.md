@@ -18,7 +18,7 @@ Official implementation of
 
 <!-- <img src="assets/8.png" width="100%" style="max-width: 640px"><br/> -->
 
-This repository contains code for training and evaluating **DEMO<sup>3</sup>**, MoDem and TD-MPC2 agents. We additionally open-source **20+** multi-stage tasks across 4 task domains: [Meta-World](https://meta-world.github.io/), [ManiSkill3](https://maniskill.readthedocs.io/en/latest/#), [RoboSuite](https://robosuite.ai/) and [BiGym](https://github.com/chernyadev/bigym). Our codebase supports both state and pixel observations. We hope that this repository will serve as a useful community resource for future research on demonstration-augmented RL.
+This repository contains code for training and evaluating **DEMO<sup>3</sup>**, MoDem and TD-MPC2 agents. We additionally open-source **20+** multi-stage tasks across 4 task domains: [Meta-World](https://meta-world.github.io/), [ManiSkill3](https://maniskill.readthedocs.io/en/latest/#) and [RoboSuite](https://robosuite.ai/). Our codebase supports both state and pixel observations. We hope that this repository will serve as a useful community resource for future research on demonstration-augmented RL.
 
 ----
 
@@ -32,7 +32,7 @@ We provide a `Dockerfile` for easy installation. You can build the docker image 
 cd docker && docker build . -t <user>/DEMO3:1.0.0
 ```
 
-This docker image contains all dependencies needed for running ManiSkill3, Meta-World, Robosuite and BiGym experiments.
+This docker image contains all dependencies needed for running ManiSkill3, Meta-World and Robosuite experiments.
 
 If you prefer to install dependencies manually, start by installing dependencies via `conda` by running the following command:
 
@@ -40,13 +40,13 @@ If you prefer to install dependencies manually, start by installing dependencies
 conda env create -f docker/environment.yaml
 ```
 
-The `environment.yaml` file installs dependencies required for training on ManiSkill and Meta-World tasks. Since Meta-Wolrd uses a is incompatible with the MuJoCo versions of BiGym and Robosuite we install a separate conda environment for this comains. The `bigym.yaml` file installs dependencies required for training on BiGym and Robosuite tasks.
+The `environment.yaml` file installs dependencies required for training on ManiSkill and Meta-World tasks. Since Meta-Wolrd uses a is incompatible with the MuJoCo versions of Robosuite we install a separate conda environment for this comains. The `robosuite.yaml` file installs dependencies required for training on Robosuite tasks.
 
 ----
 
 ## Supported tasks
 
-This codebase currently supports **20+** continuous manipulation tasks from **ManiSkill3**, **Meta-World**, **Robosuite**, and **BiGym**. Specifically, we modify these manipulation tasks. See below table for expected name formatting for each task domain:
+This codebase currently supports **20+** continuous manipulation tasks from **ManiSkill3**, **Meta-World** and **Robosuite**. Specifically, we modify these manipulation tasks. See below table for expected name formatting for each task domain:
 
 | domain | task | reward type
 | --- | --- | --- |
@@ -56,7 +56,6 @@ This codebase currently supports **20+** continuous manipulation tasks from **Ma
 | maniskill | ms-pick-place-semi        | semi-sparse
 | robosuite | robosuite-lift-dense      | dense
 | robosuite | robosuite-stack-semi      | semi-sparse
-|   bigym   | bigym-move-plate-semi     | semi-sparse
 
 
 which can be run by specifying the `task` argument for `evaluation.py` or `train.py`. In order to change the observation type, use argument `obs=rgb` or `obs=state` in `demo3.yaml` or `eval.yaml`.

@@ -48,11 +48,11 @@ RUN conda update conda && \
     conda clean -ya && \
     pip cache purge
 
-# Bigym environment
-COPY bigym.yaml /root
+# Robosuite environment
+COPY robosuite.yaml /root
 RUN conda update conda && \
-    conda env create -f /root/bigym.yaml && \
-    rm /root/bigym.yaml && \
+    conda env create -f /root/robosuite.yaml && \
+    rm /root/robosuite.yaml && \
     conda clean -ya && \
     pip cache purge
 

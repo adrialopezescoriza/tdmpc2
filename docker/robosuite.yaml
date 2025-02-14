@@ -1,4 +1,4 @@
-name: bigym
+name: demo3-robosuite
 channels:
   - pytorch-nightly
   - nvidia
@@ -38,4 +38,3 @@ dependencies:
     - seaborn==0.13.2
     - gpustat==1.1.1
     - robosuite==1.4.1
-    - git+https://github.com/chernyadev/bigym.git#egg=bigym
