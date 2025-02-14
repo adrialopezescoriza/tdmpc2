@@ -40,7 +40,7 @@ If you prefer to install dependencies manually, start by installing dependencies
 conda env create -f docker/environment.yaml
 ```
 
-The `environment.yaml` file installs dependencies required for training on ManiSkill and Meta-World tasks. Since Meta-Wolrd uses a is incompatible with the MuJoCo versions of Robosuite we install a separate conda environment for this comains. The `robosuite.yaml` file installs dependencies required for training on Robosuite tasks.
+The `environment.yaml` file installs dependencies required for training on ManiSkill and Meta-World tasks. Since Meta-Wolrd uses a is incompatible with the MuJoCo version of Robosuite we install a separate conda environment for this comains. The `robosuite.yaml` file installs dependencies required for training on Robosuite tasks.
 
 ----
 
