@@ -11,7 +11,7 @@ class EnsembleBuffer(Buffer):
 
 	def __init__(self, cfg):
 		_cfg1, _cfg2 = deepcopy(cfg), deepcopy(cfg)
-		_cfg1.batch_size = int(cfg.batch_size * (1 - _cfg1.oversample_ratio))
+		_cfg1.batch_size = int(cfg.batch_size * (1 - _cfg1.demo_sampling_ratio))
 		_cfg2.batch_size = int(cfg.batch_size - _cfg1.batch_size)
 		super().__init__(_cfg1)
 

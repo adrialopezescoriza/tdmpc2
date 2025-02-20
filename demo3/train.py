@@ -49,10 +49,10 @@ def train(cfg: dict):
 	# Config checks and processing
 	assert torch.cuda.is_available()
 	assert cfg.steps > 0, 'Must train for at least 1 step.'
-	cfg.oversample_ratio = cfg.get("oversample_ratio", 0.0)
-	cfg.use_demos = cfg.oversample_ratio > 0.0
-	assert cfg.oversample_ratio >= 0.0 and cfg.oversample_ratio <= 1.0, \
-		f"Oversampling ratio {cfg.oversample_ratio} is not between 0 and 1"
+	cfg.demo_sampling_ratio = cfg.get("demo_sampling_ratio", 0.0)
+	cfg.use_demos = cfg.demo_sampling_ratio > 0.0
+	assert cfg.demo_sampling_ratio >= 0.0 and cfg.demo_sampling_ratio <= 1.0, \
+		f"Oversampling ratio {cfg.demo_sampling_ratio} is not between 0 and 1"
 	cfg = parse_cfg(cfg)
 	set_seed(cfg.seed)
 	print(colored('Work dir:', 'yellow', attrs=['bold']), cfg.work_dir)

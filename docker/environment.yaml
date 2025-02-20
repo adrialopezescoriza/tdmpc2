@@ -1,4 +1,4 @@
-name: maniskill3
+name: demo3
 channels:
   - pytorch-nightly
   - nvidia
@@ -37,5 +37,5 @@ dependencies:
     - matplotlib==3.7.5
     - seaborn==0.13.2
     - gpustat==1.1.1
-    - git+https://github.com/haosulab/ManiSkill.git#egg=mani-skill
+    - git+https://github.com/haosulab/ManiSkill.git@0de43f1f5e10dabd860baacbcbd10ab443e998b1#egg=mani-skill
     - git+https://github.com/Farama-Foundation/Metaworld.git@c822f28f582ba1ad49eb5dcf61016566f28003ba#egg=metaworld

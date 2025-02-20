@@ -24,7 +24,7 @@ This repository contains code for training and evaluating **DEMO<sup>3</sup>**, 
 
 ## Getting started
 
-You will need a machine with a GPU and at least 12 GB of RAM for state-based RL with DEMO<sup>3</sup>, and 32 GB of RAM for pixel-based observations. A GPU with at least 16 GB of memory is recommended for pixel-based RL.
+You will need a machine with a GPU and at least 12 GB of RAM for state-based RL with DEMO<sup>3</sup>, and 32 GB of RAM for pixel-based observations. The GPU must be able to support CUDA 12.4 as a minimum.
 
 We provide a `Dockerfile` for easy installation. You can build the docker image by running
 
@@ -83,7 +83,11 @@ $ python train.py task=ms-stack-cube-semi steps=1000000 demo_path=/path/to/ms-de
 $ python train.py task=mw-assembly-semi steps=500000 obs=rgb demo_path=/path/to/mw-demos/assembly-200.pkl enable_reward_learning=true
 ```
 
-We recommend using default hyperparameters for single-task online RL from the official TDMPC**2** implementation, although they can be modified in `tdmpc2.yaml`.
+We recommend using default hyperparameters for single-task online RL from the official TDMPC**2** implementation, although they can be modified in `tdmpc2.yaml`. Alternatively the backbone algorithm TDMPC2 can be ran by deactivating reward learning, demonstration oversampling and policy pretraining:
+
+```
+$ python train.py task=ms-stack-cube-semi steps=1000000 enable_reward_learning=false demo_sampling_ratio=0.0 policy_pretraining=False
+```
 
 ----
 
