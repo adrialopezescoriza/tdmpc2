@@ -1,6 +1,7 @@
 import numpy as np
 import gymnasium as gym
 
+
 class RobosuiteTask(gym.Env):
     def __init__(
         self,
@@ -32,7 +33,7 @@ class RobosuiteTask(gym.Env):
                 camera_widths=width,
                 control_freq=10,
                 horizon=40,
-                reward_shaping=True if self.reward_type=="dense" else False,
+                reward_shaping=True if self.reward_type == "dense" else False,
             )
             self.horizon = 40
         elif "stack" in env_name:
@@ -45,7 +46,7 @@ class RobosuiteTask(gym.Env):
                 camera_widths=width,
                 control_freq=10,
                 horizon=80,
-                reward_shaping=True if self.reward_type=="dense" else False,
+                reward_shaping=True if self.reward_type == "dense" else False,
             )
             self.horizon = 80
         elif "door" in env_name:
@@ -59,7 +60,7 @@ class RobosuiteTask(gym.Env):
                 camera_widths=width,
                 control_freq=10,
                 horizon=80,
-                reward_shaping=True if self.reward_type=="dense" else False,
+                reward_shaping=True if self.reward_type == "dense" else False,
             )
             self.horizon = 80
         elif "pick-place-can" in env_name:
@@ -74,7 +75,7 @@ class RobosuiteTask(gym.Env):
                 horizon=120,
                 single_object_mode=2,
                 object_type="can",
-                reward_shaping=True if self.reward_type=="dense" else False,
+                reward_shaping=True if self.reward_type == "dense" else False,
             )
             self.horizon = 120
 
@@ -113,9 +114,13 @@ class RobosuiteTask(gym.Env):
         if self.from_pixels:
             images = {}
             for c in self.cameras:
-                images[self.camera_names[c]] = obs[self.camera_names[c] + "_image"][::-1].astype(np.uint8)
+                images[self.camera_names[c]] = obs[self.camera_names[c] + "_image"][
+                    ::-1
+                ].astype(np.uint8)
                 if self.channels_first:
-                    images[self.camera_names[c]] = images[self.camera_names[c]].transpose((2, 0, 1))
+                    images[self.camera_names[c]] = images[
+                        self.camera_names[c]
+                    ].transpose((2, 0, 1))
             return images
         else:
             robot_state = obs["robot0_proprio-state"]
@@ -129,7 +134,7 @@ class RobosuiteTask(gym.Env):
         if isinstance(info["success"], np.bool_):
             info["success"] = info["success"].item()
         return obs, reward, False, False, info
-    
+
     def reward(self):
         return self._env.reward(action=None)
 
@@ -144,7 +149,7 @@ class RobosuiteTask(gym.Env):
     @property
     def _max_episode_steps(self):
         return self.horizon
-    
+
     @property
     def max_episode_steps(self):
         return self.horizon
@@ -152,11 +157,11 @@ class RobosuiteTask(gym.Env):
     @property
     def observation_space(self):
         return self._observation_space
-    
+
     @property
     def n_stages(self):
         return 1
-    
+
     @property
     def reward_mode(self):
-        return "dense" if self.reward_type=="dense" else "semi_sparse"
+        return "dense" if self.reward_type == "dense" else "semi_sparse"
