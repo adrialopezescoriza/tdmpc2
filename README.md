@@ -83,7 +83,7 @@ $ python train.py task=ms-stack-cube-semi steps=1000000 demo_path=/path/to/ms-de
 $ python train.py task=mw-assembly-semi steps=500000 obs=rgb demo_path=/path/to/mw-demos/assembly-200.pkl enable_reward_learning=true
 ```
 
-We recommend using default hyperparameters for single-task online RL from the official TDMPC**2** implementation, although they can be modified in `tdmpc2.yaml`. Alternatively the backbone algorithm TDMPC2 can be ran by deactivating reward learning, demonstration oversampling and policy pretraining:
+We recommend using default hyperparameters for single-task online RL from the official TDMPC2 implementation, although they can be modified in `tdmpc2.yaml`. Alternatively the backbone algorithm TDMPC2 can be ran by deactivating reward learning, demonstration oversampling and policy pretraining:
 
 ```
 $ python train.py task=ms-stack-cube-semi steps=1000000 enable_reward_learning=false demo_sampling_ratio=0.0 policy_pretraining=False
