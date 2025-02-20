@@ -14,7 +14,7 @@ Official implementation of
 
 ## Overview
 
-**DEMO<sup>3</sup>** is a a framework that incorporates multi-stage dense reward learning, a bi-phasic training scheme, and world model learning into a carefully designed demonstration-augmented RL algorithm. Our evaluations demonstrate that our method improves data-efficiency by an average of 40% and by 70% on particularly difficult tasks compared to state-of-the-art approaches. We validate this across 16 sparse-reward tasks spanning four domains, including challenging humanoid visual control tasks using as few as five demonstrations.. 
+**DEMO<sup>3</sup>** is a a framework that incorporates multi-stage dense reward learning, a bi-phasic training scheme, and world model learning into a carefully designed demonstration-augmented RL algorithm. Our evaluations demonstrate that our method improves data-efficiency by an average of **40%** and by **70%** on particularly difficult tasks compared to state-of-the-art approaches. We validate this across 16 sparse-reward tasks spanning four domains, including challenging humanoid visual control tasks using as few as five demonstrations.. 
 
 <!-- <img src="assets/8.png" width="100%" style="max-width: 640px"><br/> -->
 
