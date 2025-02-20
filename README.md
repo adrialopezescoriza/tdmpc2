@@ -6,7 +6,7 @@ Official implementation of
 
 [Adrià López Escoriza](https://adrialopezescoriza.github.io), [Nicklas Hansen](https://nicklashansen.github.io), [Stone Tao](https://www.stoneztao.com/), [Tongzhou Mu](https://cseweb.ucsd.edu/~t3mu/), [Hao Su](https://cseweb.ucsd.edu/~haosu) (UC San Diego)</br>
 
-<!-- <img src="assets/0.gif" width="12.5%"><img src="assets/1.gif" width="12.5%"><img src="assets/2.gif" width="12.5%"><img src="assets/3.gif" width="12.5%"><img src="assets/4.gif" width="12.5%"><img src="assets/5.gif" width="12.5%"><img src="assets/6.gif" width="12.5%"><img src="assets/7.gif" width="12.5%"></br> -->
+<img src="assets/0.gif" width="25%"><img src="assets/1.gif" width="25%"><img src="assets/2.gif" width="25%"><img src="assets/3.gif" width="25%"></br>
 
 [[Website]](https://sites.google.com/view/icml2025demo3) [[Paper]](https://arxiv.org/abs/2310.16828)
 
