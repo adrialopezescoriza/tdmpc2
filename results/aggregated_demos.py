@@ -95,9 +95,9 @@ def main():
     # Formatting
     plt.xlabel('Number of Demos', fontsize=35)
     plt.ylabel('Steps to reach 30% success \u2193', fontsize=35)
-    plt.xticks(fontsize=30)
+    plt.xticks(fontsize=35)
     plt.xlim(0,5)
-    plt.yticks(fontsize=30)
+    plt.yticks(fontsize=35)
     plt.grid(True, linestyle='-', alpha=0.6)
 
     # Custom legend
