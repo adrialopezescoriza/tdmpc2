@@ -35,6 +35,11 @@ MANISKILL_TASKS = {
         control_mode="pd_ee_delta_pose",
         reward_mode="dense",
     ),
+    "ms-stack-n-cubes": dict(
+        env="StackNCubes_DEMO3",
+        control_mode="pd_ee_delta_pose",
+        reward_mode="dense",
+    ),
     "ms-peg-insertion": dict(
         env="PegInsertionSide_DEMO3",
         control_mode="pd_ee_delta_pose",
@@ -78,6 +83,11 @@ MANISKILL_TASKS = {
     ),
     "ms-stack-cube-semi": dict(
         env="StackCube_DEMO3",
+        control_mode="pd_ee_delta_pose",
+        reward_mode="semi_sparse",
+    ),
+    "ms-stack-n-cubes-semi": dict(
+        env="StackNCubes_DEMO3",
         control_mode="pd_ee_delta_pose",
         reward_mode="semi_sparse",
     ),
@@ -165,7 +175,8 @@ class ManiSkillWrapper(gym.Wrapper):
         self.env = env
         self.cfg = cfg
         self.action_space = env.single_action_space
-        self.max_episode_steps = cfg.max_episode_steps
+        # self.max_episode_steps = cfg.max_episode_steps
+        self.max_episode_steps = env.max_episode_steps
 
         self.obs_keys = cfg.get("obs_keys", None)
 

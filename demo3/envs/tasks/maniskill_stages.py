@@ -10,6 +10,7 @@ import torch
 import sapien
 from typing import Union
 from envs.utils import convert_observation_to_space, flatten_space
+from envs.tasks.multi_stack_cube import StackNCubesEnv
 
 
 class MultiRobotWrapper(gym.ActionWrapper):
@@ -151,6 +152,35 @@ class StackCube_DEMO3(DEMO3_BaseEnv, StackCubeEnv):
                 torch.logical_or(eval_info["is_cubeA_on_cubeB"], eval_info["success"])
             ).float(),
         }
+
+############################################
+# Stack N Cubes
+############################################
+@register_env("StackNCubes_DEMO3", max_episode_steps=100)
+class StackNCubes_DEMO3(DEMO3_BaseEnv, StackNCubesEnv):
+    def __init__(self, *args, num_cubes=3, **kwargs):
+        self.n_stages = num_cubes
+        super().__init__(*args, robot_uids="panda_wristcam", num_cubes=num_cubes, **kwargs)
+
+    def compute_stage_indicator(self):
+        eval_info = self.evaluate()
+        indicators = {}
+        num_cubes = self.num_cubes
+        success = eval_info["success"]  # (B,)
+
+        # Stage 0: cube_0 must be grasped or success
+        indicators["is_cube_0_grasped"] = (
+            torch.logical_or(eval_info["grasped_0"], success)
+        ).float()
+
+        # Stage 1 to N-1: check each stacking pair success
+        for i in range(1, num_cubes):
+            pair_key = f"pair_success_{i}"
+            indicators[f"is_cube_{i}_placed"] = (
+                torch.logical_or(eval_info[pair_key], success)
+            ).float()
+
+        return indicators
 
 
 ############################################
