@@ -175,8 +175,7 @@ class ManiSkillWrapper(gym.Wrapper):
         self.env = env
         self.cfg = cfg
         self.action_space = env.single_action_space
-        # self.max_episode_steps = cfg.max_episode_steps
-        self.max_episode_steps = env.max_episode_steps
+        self.max_episode_steps = env.max_episode_steps if hasattr(env, "max_episode_steps") else cfg.max_episode_steps
 
         self.obs_keys = cfg.get("obs_keys", None)
 

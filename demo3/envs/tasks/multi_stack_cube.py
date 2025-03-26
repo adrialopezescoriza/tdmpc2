@@ -14,7 +14,7 @@ from mani_skill.utils.scene_builder.table import TableSceneBuilder
 from mani_skill.utils.structs.pose import Pose
 
 
-@register_env("StackCube-v1", max_episode_steps=100)
+@register_env("StackNCubes-v1", max_episode_steps=100)
 class StackNCubesEnv(BaseEnv):
     """
     Task: Stack N cubes in order (bottom to top).
