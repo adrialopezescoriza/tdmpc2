@@ -105,14 +105,7 @@ class StackNCubesEnv(BaseEnv):
             grasped_flag = self.agent.is_grasping(cube)  # (B,)
             result[f"grasped_{i}"] = grasped_flag
 
-        # Ordered stacking constraints
-        stacked_flags = [None] * self.num_cubes
-        for i in range(self.num_cubes):
-            if i == 0:
-                # Assume the base is always valid (table)
-                stacked_flags[i] = torch.ones((B,), dtype=torch.bool, device=self.device)
-                continue
-
+        for i in range(1, self.num_cubes):
             below = self.cubes[i - 1]
             above = self.cubes[i]
             offset = above.pose.p - below.pose.p  # (B, 3)
@@ -125,87 +118,89 @@ class StackNCubesEnv(BaseEnv):
             static_flag = above.is_static(lin_thresh=1e-2, ang_thresh=0.5)
             grasp_flag = result[f"grasped_{i}"]  # (B,)
 
-            pair_success = (
-                stacked_flags[i - 1]
-                & xy_flag
-                & z_flag
-                & static_flag
-                & (~grasp_flag)
-            )
+            stacked_flag = xy_flag & z_flag
 
-            stacked_flags[i] = pair_success
-            success &= pair_success
-
-            result[f"xy_flag_{i}"] = xy_flag
-            result[f"pair_success_{i}"] = pair_success
+            result[f"stacked_flag_{i}"] = stacked_flag
+            result[f"pair_success_{i}"] = stacked_flag & static_flag & (~grasp_flag)
+            success = success & result[f"pair_success_{i}"]
 
         result["success"] = success.bool()
         return result
 
 
-    def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
-        B = action.shape[0]
-        device = self.device
-        reward = torch.zeros((B,), device=device)
-        tcp_pose = self.agent.tcp.pose.p  # (B, 3)
+    def compute_2_cube_reward(self, cubeA, cubeB, is_cubeA_grasped, is_cubeA_on_cubeB):
+        # reaching reward
+        tcp_pose = self.agent.tcp.pose.p
+        cubeA_pos = self.cubeA.pose.p
+        cubeA_to_tcp_dist = torch.linalg.norm(tcp_pose - cubeA_pos, axis=1)
+        reward = 2 * (1 - torch.tanh(5 * cubeA_to_tcp_dist))
 
+        # grasp and place reward
+        cubeA_pos = self.cubeA.pose.p
+        cubeB_pos = self.cubeB.pose.p
+        goal_xyz = torch.hstack(
+            [cubeB_pos[:, 0:2], (cubeB_pos[:, 2] + self.cube_half_size[2] * 2)[:, None]]
+        )
+        cubeA_to_goal_dist = torch.linalg.norm(goal_xyz - cubeA_pos, axis=1)
+        place_reward = 1 - torch.tanh(5.0 * cubeA_to_goal_dist)
+
+        reward[is_cubeA_grasped] = (4 + place_reward)[is_cubeA_grasped]
+
+        # ungrasp and static reward
+        gripper_width = (self.agent.robot.get_qlimits()[0, -1, 1] * 2).to(
+            self.device
+        )  # NOTE: hard-coded with panda
+        is_cubeA_grasped = is_cubeA_grasped
+        ungrasp_reward = (
+            torch.sum(self.agent.robot.get_qpos()[:, -2:], axis=1) / gripper_width
+        )
+        ungrasp_reward[~is_cubeA_grasped] = 1.0
+        v = torch.linalg.norm(self.cubeA.linear_velocity, axis=1)
+        av = torch.linalg.norm(self.cubeA.angular_velocity, axis=1)
+        static_reward = 1 - torch.tanh(v * 10 + av)
+        reward[is_cubeA_on_cubeB] = (
+            6 + (ungrasp_reward + static_reward) / 2.0
+        )[is_cubeA_on_cubeB]
+
+        # Success
+        reward[is_cubeA_on_cubeB & (~is_cubeA_grasped)] = 8
+
+        return reward
+    
+    
+    def compute_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
         # Count how many cubes are already stacked correctly
-        stacked_count = torch.zeros((B,), dtype=torch.long, device=device)
-        stacked_mask = torch.ones((B,), dtype=torch.bool, device=device)
+        stacked_count = torch.zeros((self.num_envs,), dtype=torch.int, device=self.device)
+        stacked_mask = torch.ones((self.num_envs,), dtype=torch.bool, device=self.device)
 
         for i in range(1, self.num_cubes):
-            pair_key = f"pair_success_{i}"
-            pair_success = info[pair_key]  # (B,)
+            pair_success = info[f"pair_success_{i}"]  # (B,)
             new_stacked = stacked_mask & pair_success
             stacked_count += new_stacked.long()
             stacked_mask = new_stacked
 
-        reward += 10.0 * stacked_count.float()
+        stacked_reward = 8.0 * stacked_count.float()
 
-        # If all cubes stacked, return
-        fully_stacked = stacked_count == (self.num_cubes - 1)
-        if fully_stacked.all():
-            return reward
+        # Compute reward for the next non-stacked cube for each environment
+        next_cube_idx = stacked_count + 1  # The next cube to stack is the one after the last stacked one
+        next_reward = torch.zeros((self.num_envs,), device=self.device)
 
-        # Process next cube to stack (per environment)
-        next_cube_idx = stacked_count + 1  # (B,)
-        target_pose_all = torch.stack([cube.pose.p for cube in self.cubes])  # (num_cubes, B, 3)
-        below_pose_all = torch.stack([self.cubes[i - 1].pose.p for i in range(1, self.num_cubes)])  # (num_cubes-1, B, 3)
+        # For the environments that have not stacked all cubes, compute the reward for the next cube
+        if (next_cube_idx < self.num_cubes).any():
+            next_cube_idx_mask = next_cube_idx < self.num_cubes
+            cubeA = self.cubes[next_cube_idx[next_cube_idx_mask]]
+            cubeB = self.cubes[next_cube_idx[next_cube_idx_mask] - 1]
+            is_cubeA_grasped = info[f"grasped_{next_cube_idx[next_cube_idx_mask] - 1}"]
+            is_cubeA_on_cubeB = info[f"pair_success_{next_cube_idx[next_cube_idx_mask]}"]
 
-        target_pose = torch.stack([target_pose_all[i, b] for b, i in enumerate(next_cube_idx)])  # (B, 3)
-        below_pose = torch.stack([below_pose_all[i - 1, b] for b, i in enumerate(next_cube_idx)])  # (B, 3)
-        goal_pos = below_pose + torch.tensor([0, 0, self.cube_half_size[2] * 2], device=device)
+            next_reward[next_cube_idx_mask] = self.compute_2_cube_reward(
+                cubeA, cubeB, is_cubeA_grasped, is_cubeA_on_cubeB
+            )
 
-        # Reach reward
-        dist_to_tcp = torch.linalg.norm(tcp_pose - target_pose, dim=1)
-        reach_reward = 1.0 * (1 - torch.tanh(5 * dist_to_tcp))
-
-        # Grasp reward
-        grasp_all = torch.stack([info[f"grasped_{i}"] for i in range(self.num_cubes)])  # (num_cubes, B)
-        is_grasped = torch.stack([grasp_all[i, b] for b, i in enumerate(next_cube_idx)])  # (B,)
-        grasp_reward = torch.where(is_grasped, torch.full_like(reward, 1.5), torch.zeros_like(reward))
-
-        # Place reward
-        dist_to_goal = torch.linalg.norm(target_pose - goal_pos, dim=1)
-        place_reward = 2.0 * (1 - torch.tanh(5 * dist_to_goal))
-        placed = dist_to_goal < 0.02  # (B,)
-
-        # Static and ungrasped reward
-        is_static_all = torch.stack(
-            [self.cubes[i].is_static(lin_thresh=1e-2, ang_thresh=0.5) for i in range(self.num_cubes)]
-        )  # (num_cubes, B)
-        is_static = torch.stack([is_static_all[i, b] for b, i in enumerate(next_cube_idx)])  # (B,)
-        ungrasped = ~is_grasped
-        final_reward = torch.where(
-            placed & ungrasped & is_static,
-            torch.full_like(reward, 2.5),
-            torch.zeros_like(reward),
-        )
-
-        reward += reach_reward + grasp_reward + place_reward + final_reward
-        return reward
+        return stacked_reward + next_reward
+            
 
 
     def compute_normalized_dense_reward(self, obs: Any, action: torch.Tensor, info: Dict):
-        max_reward = 10.0 * (self.num_cubes - 1)
+        max_reward = 8.0 * (self.num_cubes - 1)
         return self.compute_dense_reward(obs, action, info) / max_reward
