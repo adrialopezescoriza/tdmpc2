@@ -128,16 +128,13 @@ class StackNCubesEnv(BaseEnv):
         return result
 
 
-    def compute_2_cube_reward(self, cubeA, cubeB, is_cubeA_grasped, is_cubeA_on_cubeB):
+    def compute_2_cube_reward(self, cubeA_pos, cubeB_pos, cubeA_vel_linear, cubeA_vel_angular, is_cubeA_grasped, is_cubeA_on_cubeB):
         # reaching reward
         tcp_pose = self.agent.tcp.pose.p
-        cubeA_pos = self.cubeA.pose.p
         cubeA_to_tcp_dist = torch.linalg.norm(tcp_pose - cubeA_pos, axis=1)
         reward = 2 * (1 - torch.tanh(5 * cubeA_to_tcp_dist))
 
         # grasp and place reward
-        cubeA_pos = self.cubeA.pose.p
-        cubeB_pos = self.cubeB.pose.p
         goal_xyz = torch.hstack(
             [cubeB_pos[:, 0:2], (cubeB_pos[:, 2] + self.cube_half_size[2] * 2)[:, None]]
         )
@@ -155,8 +152,8 @@ class StackNCubesEnv(BaseEnv):
             torch.sum(self.agent.robot.get_qpos()[:, -2:], axis=1) / gripper_width
         )
         ungrasp_reward[~is_cubeA_grasped] = 1.0
-        v = torch.linalg.norm(self.cubeA.linear_velocity, axis=1)
-        av = torch.linalg.norm(self.cubeA.angular_velocity, axis=1)
+        v = torch.linalg.norm(cubeA_vel_linear, axis=1)
+        av = torch.linalg.norm(cubeA_vel_angular, axis=1)
         static_reward = 1 - torch.tanh(v * 10 + av)
         reward[is_cubeA_on_cubeB] = (
             6 + (ungrasp_reward + static_reward) / 2.0
@@ -187,14 +184,22 @@ class StackNCubesEnv(BaseEnv):
 
         # For the environments that have not stacked all cubes, compute the reward for the next cube
         if (next_cube_idx < self.num_cubes).any():
+            cubesPos = torch.stack([cube.pose.p for cube in self.cubes], dim=0)  # (num_cubes, 3)
+            cubesLinVel = torch.stack([cube.linear_velocity for cube in self.cubes], dim=0)
+            cubesAngVel = torch.stack([cube.angular_velocity for cube in self.cubes], dim=0)  # (num_cubes, 3)
+
             next_cube_idx_mask = next_cube_idx < self.num_cubes
-            cubeA = self.cubes[next_cube_idx[next_cube_idx_mask]]
-            cubeB = self.cubes[next_cube_idx[next_cube_idx_mask] - 1]
-            is_cubeA_grasped = info[f"grasped_{next_cube_idx[next_cube_idx_mask] - 1}"]
-            is_cubeA_on_cubeB = info[f"pair_success_{next_cube_idx[next_cube_idx_mask]}"]
+
+            cubeA_pos = cubesPos[next_cube_idx[next_cube_idx_mask], torch.arange(self.num_envs)]
+            cubeB_pos = cubesPos[next_cube_idx[next_cube_idx_mask]-1, torch.arange(self.num_envs)]
+            cubeA_lin_vel = cubesLinVel[next_cube_idx[next_cube_idx_mask], torch.arange(self.num_envs)]
+            cubeA_ang_vel = cubesAngVel[next_cube_idx[next_cube_idx_mask], torch.arange(self.num_envs)]
+
+            is_cubeA_grasped = torch.stack([info[f"grasped_{i}"][i] for i in next_cube_idx[next_cube_idx_mask]])
+            is_cubeA_on_cubeB = torch.stack([info[f"pair_success_{i}"][i] for i in next_cube_idx[next_cube_idx_mask]])
 
             next_reward[next_cube_idx_mask] = self.compute_2_cube_reward(
-                cubeA, cubeB, is_cubeA_grasped, is_cubeA_on_cubeB
+                cubeA_pos, cubeB_pos, cubeA_lin_vel, cubeA_ang_vel, is_cubeA_grasped, is_cubeA_on_cubeB
             )
 
         return stacked_reward + next_reward
