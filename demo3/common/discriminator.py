@@ -50,6 +50,17 @@ class Discriminator(nn.Module):
         """
         torch.save({"discriminator": self.state_dict()}, fp)
 
+    def load(self, fp):
+        """
+        Load a saved state dict from filepath (or dictionary) into current agent.
+
+        Args:
+                fp (str or dict): Filepath or state dict to load.
+        """
+        state_dict = fp if isinstance(fp, dict) else torch.load(fp)
+        self.load_state_dict(state_dict["discriminator"])
+
+
     def set_trained(self, stage_idx):
         self.trained[stage_idx] = True
 

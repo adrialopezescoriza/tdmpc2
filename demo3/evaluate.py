@@ -192,7 +192,7 @@ def evaluate(cfg: dict):
                 if cfg.save_video:
                     frame = obs_converter.get_frame(env, obs_save, cfg.render_obs)
                     frames = [
-                        add_reward_text(frame, reward[0]) if cfg.add_text else frame
+                        add_reward_text(frame, ep_reward) if cfg.add_text else frame
                     ]
 
                 while not done.all():

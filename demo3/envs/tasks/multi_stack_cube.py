@@ -195,8 +195,8 @@ class StackNCubesEnv(BaseEnv):
             cubeA_lin_vel = cubesLinVel[next_cube_idx[next_cube_idx_mask], torch.arange(self.num_envs)]
             cubeA_ang_vel = cubesAngVel[next_cube_idx[next_cube_idx_mask], torch.arange(self.num_envs)]
 
-            is_cubeA_grasped = torch.stack([info[f"grasped_{i}"][i] for i in next_cube_idx[next_cube_idx_mask]])
-            is_cubeA_on_cubeB = torch.stack([info[f"pair_success_{i}"][i] for i in next_cube_idx[next_cube_idx_mask]])
+            is_cubeA_grasped = torch.stack([info[f"grasped_{i}"][idx] for idx, i in enumerate(next_cube_idx[next_cube_idx_mask])])
+            is_cubeA_on_cubeB = torch.stack([info[f"pair_success_{i}"][idx] for idx, i in enumerate(next_cube_idx[next_cube_idx_mask])])
 
             next_reward[next_cube_idx_mask] = self.compute_2_cube_reward(
                 cubeA_pos, cubeB_pos, cubeA_lin_vel, cubeA_ang_vel, is_cubeA_grasped, is_cubeA_on_cubeB
