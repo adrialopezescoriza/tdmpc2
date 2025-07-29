@@ -42,9 +42,9 @@ MANISKILL_STAGES_TASKS = [
 ]
 OBS = "rgbd"
 NUM_ENVS = 1
-ENTITY = "wandb_username"  # wandb_username
-ALGORITHMS = ["DEMO3", "MoDem"]
-PROJECT = "maniskill3"
+ENTITY = "alopez"  # wandb_username
+ALGORITHMS = ["Modem2 + DrS"]
+PROJECT = "robosuite"  # "maniskill3", "metaworld", "robosuite"
 TASKS_DICT = {
     "maniskill3": MANISKILL_TASKS,
     "metaworld": METAWORLD_TASKS,
@@ -70,14 +70,14 @@ def interpolate_steps(df, step_col="step", metric_col="success", interval=INTERV
     return interpolated_df
 
 
-def get_avg_df(runs, group, key, task, algorithm):
+def get_avg_df(runs, group, key, task, step_name="step"):
     if len(runs) == 0:
         return None
     new_key = key.replace("episode_", "")
     # new_key = key.replace('stage_1_', '')
     data = dict()
     for run in runs:
-        df = run.history(keys=[f"{group}/{key}"], x_axis=f"{group}/step", pandas=True)
+        df = run.history(keys=[f"{group}/{key}"], x_axis=f"{group}/{step_name}", pandas=True)
         df = df.rename(columns={f"{group}/{key}": new_key})
         objects = run.config.get("n_demos")
         seed = run.config.get("seed")
@@ -94,17 +94,17 @@ def get_avg_df(runs, group, key, task, algorithm):
     for objects in data.keys():
         data[objects] = pd.concat(
             [
-                interpolate_steps(d, step_col=f"{group}/step", metric_col=new_key)
+                interpolate_steps(d, step_col=f"{group}/{step_name}", metric_col=new_key)
                 for d in data[objects].values()
             ],
             ignore_index=True,
         )
 
         # limit to plot range
-        data[objects] = data[objects][data[objects][f"{group}/step"] <= STEPS]
+        data[objects] = data[objects][data[objects][f"{group}/{step_name}"] <= STEPS]
 
         # clean up
-        data[objects] = data[objects].rename(columns={f"{group}/step": "step"})
+        data[objects] = data[objects].rename(columns={f"{group}/{step_name}": "step"})
         if group == "train":  # average over steps
             data[objects] = data[objects].groupby(["step", "seed"]).mean().reset_index()
         data[objects][new_key] = data[objects][new_key].round(4)
@@ -120,7 +120,7 @@ def get_avg_df(runs, group, key, task, algorithm):
                 print(f"WARNING: missing steps for seed {seed} for {objects}")
 
     # save to csv
-    fp = SAVE_PATH_CSV / ALGO_TO_LABEL[algorithm] / f"{task}.csv"
+    fp = SAVE_PATH_CSV / "Pretraining" / f"{task}.csv"
     fp.parent.mkdir(parents=True, exist_ok=True)
     # convert data to df and save to csv
     df = pd.DataFrame()
@@ -136,7 +136,7 @@ def get_avg_df(runs, group, key, task, algorithm):
     print("Average success rate:", float(df["success"].mean()))
 
 
-def results_to_csv(group="eval", key="episode_success"):  # stage_1_success
+def results_to_csv(group="pretrain", key="episode_success", step_name="iteration"):  # stage_1_success
     runs = get_runs(entity=ENTITY, project=PROJECT)
 
     for task in TASKS:
@@ -144,7 +144,7 @@ def results_to_csv(group="eval", key="episode_success"):  # stage_1_success
             runs_ = filter_runs(
                 runs, task=task, algorithm=algo, obs=OBS, num_envs=NUM_ENVS
             )
-            get_avg_df(runs_, group, key, task, algo)
+            get_avg_df(runs_, group, key, task)
 
 
 if __name__ == "__main__":

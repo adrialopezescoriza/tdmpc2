@@ -4,14 +4,15 @@ defaults:
 
 # environment
 task: ms-peg-insertion-semi
-obs: state
+obs: rgbd
 obs_save: rgbd
 num_envs: 1
 sim_backend: gpu
 
 # evaluation
-checkpoint: /home/adria/tdmpc2/ckpt/Maniskill3/tdmpc/PegInsertionSide.pt
-eval_episodes: 1
+checkpoint: /home/adria/tdmpc2/ckpt/Maniskill3/DEMO3/PegInsertionSide/agent_1000000.pt
+disc_checkpoint: /home/adria/tdmpc2/ckpt/Maniskill3/DEMO3/PegInsertionSide/disc_1000000.pt
+eval_episodes: 20
 # saving
 save_trajectory: false
 success_only: true
@@ -22,3 +23,7 @@ save_video: true
 render_obs: false
 compile: false
 add_text: false
+
+discriminator:
+    disc_lr: 3e-4
+    batch_size: 256

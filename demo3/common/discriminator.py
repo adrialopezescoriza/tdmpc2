@@ -144,10 +144,10 @@ class Discriminator(nn.Module):
             )  # Dummy stage_reward for success state (always 0)
 
             k = 3
-            reward = k * stage_idx + torch.gather(
+            reward = stage_idx + torch.gather(
                 stage_rewards, -1, stage_idx.long()
-            )  # Selects stage index for each reward
-            reward = reward / (k * self.n_stages)  # Normalize reward (approx.)
-            reward = reward + 1  # make the reward positive
+            ) / k # Selects stage index for each reward
+            # reward = reward / (k * self.n_stages)  # Normalize reward (approx.)
+            # reward = reward + 1  # make the reward positive
 
             return reward

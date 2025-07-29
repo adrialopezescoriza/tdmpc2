@@ -4,22 +4,22 @@ defaults:
 
 # environment
 seed: 1
-task: ms-peg-insertion-semi
-obs: rgb
+task: ms-stack-n-cubes
+obs: state
 num_envs: 16
 
 # evaluation
 eval_episodes: 10
-eval_freq: 2000
+eval_freq: 10000
 
 # training
-steps: 4_000_000
+steps: 10_000_000
 batch_size: 256
 steps_per_update: 4 # utd = steps_per_update / num_envs (in this implementation)
-buffer_size: 300_000
-save_freq: 500_000
-demo_sampling_ratio: 0.5 # Demonstration sampling ratio
-policy_pretraining: true
+buffer_size: 1_000_000
+save_freq: 50_000
+demo_sampling_ratio: 0.0 # Demonstration sampling ratio
+policy_pretraining: false
 use_demos: ???
 seed_scheduler: false
 demo_success_only: false
@@ -31,14 +31,14 @@ pretrain:
     log_freq: 500
 
 # logging
-wandb_project: demo3
-wandb_entity: ???
+wandb_project: tdmpc
+wandb_entity: alopez
 wandb_silent: true
-disable_wandb: true
+disable_wandb: false
 save_csv: false
 
 # reward learning
-enable_reward_learning: true
+enable_reward_learning: false
 n_stages: ???
 demo_path: ??? #/path/to/demos/data.pkl
 discriminator:

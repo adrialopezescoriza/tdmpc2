@@ -23,10 +23,13 @@ from common.discriminator import Discriminator
 import cv2
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.ticker import FormatStrFormatter
 
 import torchrl
 
 torch.backends.cudnn.benchmark = True
+
+T_MAX = 50
 
 def add_reward_text(frame, reward):
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -40,11 +43,23 @@ def add_reward_text(frame, reward):
 
 def plot_reward_evolution(rewards):
     fig, ax = plt.subplots(figsize=(4, 4))
-    ax.plot(rewards, color='blue')
-    ax.set_title("Reward Evolution")
+    ax.plot(rewards, color='red')
+    # ax.set_title("Reward Evolution")
     ax.set_xlabel("Timestep")
     ax.set_ylabel("Reward")
     ax.grid(True)
+
+    # Set fixed axis limits
+    ax.set_xlim(0, T_MAX)
+    ax.set_ylim(-0.5, 3.5)
+
+    # Set tick formatters
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.0f'))  # No decimals
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))  # One decimal
+
+    # Add spacing around plot
+    plt.subplots_adjust(left=0.18, bottom=0.18, right=0.95, top=0.95)
+
     canvas = FigureCanvas(fig)
     canvas.draw()
     img = np.frombuffer(canvas.tostring_rgb(), dtype='uint8')
@@ -130,6 +145,9 @@ def evaluate(cfg: dict):
             ep_reward += reward
             t += 1
             rewards.append(reward.item())
+
+            if t >= T_MAX:
+                break
 
             if cfg.save_video:
                 frame = obs_converter.get_frame(env, obs_save, cfg.render_obs)
